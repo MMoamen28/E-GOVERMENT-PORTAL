@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { GoRulesService } from '../../gorules.service';
+import { GoRulesService } from './gorules/gorules.service';
 
 @Injectable()
 export class ScholarshipService {
