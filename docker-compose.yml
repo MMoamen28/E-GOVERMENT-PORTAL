@@ -1,0 +1,66 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: egov-postgres
+    environment:
+      POSTGRES_DB: egov_db
+      POSTGRES_USER: egov_user
+      POSTGRES_PASSWORD: egov_pass
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - egov-network
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U egov_user -d egov_db']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:23.0.0
+    container_name: egov-keycloak
+    command: start-dev
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/egov_db
+      KC_DB_USERNAME: egov_user
+      KC_DB_PASSWORD: egov_pass
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_HOSTNAME_STRICT: "false"
+      KC_HTTP_ENABLED: "true"
+    ports:
+      - '8080:8080'
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - egov-network
+
+  nestjs-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: egov-nestjs
+    ports:
+      - '3000:3000'
+    environment:
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: egov-portal
+      KEYCLOAK_CLIENT_ID: id-renewal-api
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - egov-network
+
+volumes:
+  postgres_data:
+
+networks:
+  egov-network:
+    driver: bridge
