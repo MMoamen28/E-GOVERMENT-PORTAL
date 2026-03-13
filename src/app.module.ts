@@ -2,9 +2,11 @@ import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
+import { GoRulesModule } from './gorules/gorules.module';
+import { IdRenewalModule } from './id-renewal/id-renewal.module';
 
 @Module({
-  imports: [AuthModule],
+  imports: [AuthModule, GoRulesModule, IdRenewalModule],
   controllers: [AppController],
   providers: [AppService],
 })
