@@ -23,7 +23,7 @@ services:
   keycloak:
     image: quay.io/keycloak/keycloak:23.0.0
     container_name: egov-keycloak
-    command: start-dev
+    command: start-dev --import-realm
     environment:
       KC_DB: postgres
       KC_DB_URL: jdbc:postgresql://postgres:5432/egov_db
@@ -33,6 +33,8 @@ services:
       KEYCLOAK_ADMIN_PASSWORD: admin
       KC_HOSTNAME_STRICT: "false"
       KC_HTTP_ENABLED: "true"
+    volumes:
+      - ./keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json
     ports:
       - '8080:8080'
     depends_on:
@@ -52,11 +54,13 @@ services:
       KEYCLOAK_URL: http://keycloak:8080
       KEYCLOAK_REALM: egov-portal
       KEYCLOAK_CLIENT_ID: id-renewal-api
+      GORULES_URL: http://gorules:8090
     depends_on:
       postgres:
         condition: service_healthy
     networks:
       - egov-network
+
 
 volumes:
   postgres_data:
