@@ -44,13 +44,13 @@ Use the `access_token` from the response as the Bearer token.
 ## Secured endpoints
 
 - **GET /** – public (no token).
-- **POST /api/scholarship/apply**, **GET /api/scholarship**, **GET /api/scholarship/:id** – require a valid JWT and one of: `applicant`, `officer`, `admin`.
+- **POST /scholarship/apply**, **GET /scholarship**, **GET /scholarship/:id** – require a valid JWT and one of: `applicant`, `officer`, `admin`.
 
 Example with token:
 
 ```bash
 export TOKEN="<access_token from above>"
-curl -H "Authorization: Bearer $TOKEN" http://localhost:3000/api/scholarship
+curl -H "Authorization: Bearer $TOKEN" http://localhost:3000/scholarship
 ```
 
 ## Environment (optional)

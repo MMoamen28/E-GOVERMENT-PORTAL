@@ -1,6 +1,6 @@
 # Rules — one ruleset per service/sub-branch
 
-The files in this folder are **GoRules rulesets**. Each ruleset is owned and developed on its **own sub-branch**; this branch (Features/Scholarship) is where they are integrated.
+The files in this folder are **GoRules rulesets**. **GoRules are set in the sub-branches** — each service team implements and maintains their rules (e.g. name validation, decision tables, priority checks) on their own sub-branch. This branch (Features/Scholarship) is where they are integrated after merge.
 
 ## Ruleset → service / branch mapping
 
