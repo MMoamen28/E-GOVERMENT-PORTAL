@@ -34,7 +34,7 @@ Wait until you see something like: `Nest application successfully started`.
 
 - **API base** → http://localhost:3000  
 - **Public** → http://localhost:3000 (GET `/` returns “Hello World”)  
-- **Protected** → `POST /api/scholarship/apply`, `GET /api/scholarship`, `GET /api/scholarship/:id` require a JWT.
+- **Protected** → `POST /scholarship/apply`, `GET /scholarship`, `GET /scholarship/:id` require a JWT.
 
 ---
 
@@ -69,16 +69,16 @@ Copy the `access_token` from the JSON response.
 Replace `YOUR_TOKEN` with the token you got:
 
 - **List applications:**  
-  `GET http://localhost:3000/api/scholarship`  
+  `GET http://localhost:3000/scholarship`  
   Header: `Authorization: Bearer YOUR_TOKEN`
 
 - **Submit application:**  
-  `POST http://localhost:3000/api/scholarship/apply`  
+  `POST http://localhost:3000/scholarship/apply`  
   Header: `Authorization: Bearer YOUR_TOKEN`  
   Body (JSON):  
   `{ "applicantId": "user-123", "gpa": 3.8, "income": 1500, "achievements": true }`
 
-You can use **Postman**, **Insomnia**, or browser dev tools. If you call `/api/scholarship` without a token you should get `401 Unauthorized`.
+You can use **Postman**, **Insomnia**, or browser dev tools. If you call `/scholarship` without a token you should get `401 Unauthorized`.
 
 **Test users:** See `docs/KEYCLOAK_SETUP.md` (e.g. `applicant1` / `test123`, `officer1` / `test123`, `admin` / `admin123`).
 
@@ -133,8 +133,8 @@ Runs Jest unit tests for the NestJS app.
 | Public endpoint           | Browser: http://localhost:3000 → “Hello World” |
 | Keycloak login            | http://localhost:8080 → admin / admin, realm `e-gov-portal` |
 | Get JWT                   | Token request with `applicant1` / `test123` (see section 2) |
-| Protected API             | `GET /api/scholarship` with `Authorization: Bearer <token>` → 200 and list (or empty array) |
-| Submit application        | `POST /api/scholarship/apply` with body + Bearer token → 201 and saved application |
+| Protected API             | `GET /scholarship` with `Authorization: Bearer <token>` → 200 and list (or empty array) |
+| Submit application        | `POST /scholarship/apply` with body + Bearer token → 201 and saved application |
 | Frontend home/services     | Open `frontend/index.html` or http://localhost:5000 (serve) |
 | Frontend login/contact     | Use forms; check validation and success messages |
 

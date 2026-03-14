@@ -69,7 +69,7 @@ This branch is the **main integration branch** for the scholarship feature. Ever
 
 ## 7. Flow Example
 
-1. User submits application via NestJS API (e.g. `POST /api/scholarship/apply`).
+1. User submits application via NestJS API (e.g. `POST /scholarship/apply`).
 2. NestJS service sends input to GoRules (levels, priority, doc validation, etc.).
 3. GoRules returns decision (approval, priority, level).
 4. NestJS updates PostgreSQL with result.
