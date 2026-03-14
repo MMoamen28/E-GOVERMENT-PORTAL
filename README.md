@@ -54,7 +54,7 @@ npm run start:dev
 You get:
 
 - **API** at `http://localhost:3000`
-- **Scholarship** — `POST /scholarship/apply`, `GET /scholarship`, `GET /scholarship/:id` (JWT required; see `docs/KEYCLOAK_SETUP.md` for test users and token)
+- **Scholarship** — `POST /api/scholarship/apply`, `GET /api/scholarship`, `GET /api/scholarship/:id` (JWT required; see `docs/KEYCLOAK_SETUP.md` for test users and token)
 - **PostgreSQL** on `localhost:5432` (user: `egov_user`, db: `e_gov_portal`) — no setup
 - **Keycloak** at `http://localhost:8080` (realm + users auto-imported) — no setup
 
