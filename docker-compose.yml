@@ -1,4 +1,4 @@
-version: '3.8'
+version: '3.8'  # You can remove this line if you want to avoid the warning
 services:
   postgres:
     image: postgres:15
@@ -22,6 +22,18 @@ services:
       KEYCLOAK_ADMIN_PASSWORD: admin
     ports:
       - "8080:8080"
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: e_gov_pgadmin
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com   # change as needed
+      PGADMIN_DEFAULT_PASSWORD: admin          # change as needed
+    ports:
+      - "5050:80"                              # access pgAdmin at http://localhost:5050
+    depends_on:
+      - postgres
 
 volumes:
   pgdata:
