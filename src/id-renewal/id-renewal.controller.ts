@@ -1,4 +1,13 @@
-import { Controller, Post, Get, Param, Body, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Param,
+  Body,
+  UseGuards,
+  HttpCode,
+  HttpStatus,
+} from '@nestjs/common';
 import {
   ApiTags,
   ApiBearerAuth,
@@ -7,6 +16,7 @@ import {
 } from '@nestjs/swagger';
 import { IdRenewalService } from './id-renewal.service';
 import { CreateRenewalDto } from './dto/create-renewal.dto';
+import { CompleteTaskDto } from './dto/complete-task.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
@@ -37,6 +47,29 @@ export class IdRenewalController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   async submitRequest(@Body() dto: CreateRenewalDto) {
     return this.idRenewalService.submitRequest(dto);
+  }
+
+  @Get('tasks')
+  @Roles('supervisor')
+  @ApiOperation({ summary: 'Get all pending supervisor review tasks' })
+  @ApiResponse({ status: 200, description: 'List of pending tasks' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  getSupervisorTasks() {
+    return this.idRenewalService.getSupervisorTasks();
+  }
+
+  @Post('tasks/:taskId/complete')
+  @Roles('supervisor')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Approve or reject a renewal request' })
+  @ApiResponse({ status: 200, description: 'Task completed, request updated' })
+  @ApiResponse({ status: 404, description: 'Task or request not found' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async completeTask(
+    @Param('taskId') taskId: string,
+    @Body() dto: CompleteTaskDto,
+  ) {
+    return this.idRenewalService.completeTask(taskId, dto.approved);
   }
 
   @Get()

@@ -1,6 +1,10 @@
-import { Injectable, UnprocessableEntityException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  UnprocessableEntityException,
+} from '@nestjs/common';
 import { GoRulesService } from '../gorules/gorules.service';
-import { FlowableService } from '../flowable/flowable.service';
+import { FlowableService, FlowableTask } from '../flowable/flowable.service';
 import { CreateRenewalDto } from './dto/create-renewal.dto';
 
 export interface RenewalRequest {
@@ -65,7 +69,38 @@ export class IdRenewalService {
     return this.requests;
   }
 
-  findOne(id: string): RenewalRequest | undefined {
-    return this.requests.find((r) => r.id === id);
+  findOne(id: string): RenewalRequest {
+    const request = this.requests.find((r) => r.id === id);
+    if (!request) {
+      throw new NotFoundException(`Renewal request '${id}' not found`);
+    }
+    return request;
+  }
+
+  async getSupervisorTasks(): Promise<FlowableTask[]> {
+    return this.flowableService.getSupervisorTasks();
+  }
+
+  async completeTask(
+    taskId: string,
+    approved: boolean,
+  ): Promise<RenewalRequest> {
+    // Resolve which local request this task belongs to via processInstanceId
+    const task = await this.flowableService.getTaskById(taskId);
+
+    const request = this.requests.find(
+      (r) => r.workflowId === task.processInstanceId,
+    );
+    if (!request) {
+      throw new NotFoundException(
+        'No renewal request found for this workflow task',
+      );
+    }
+
+    // Drive the BPMN gateway: approved variable routes to approve/reject path
+    await this.flowableService.completeTask(taskId, approved);
+
+    request.status = approved ? 'APPROVED' : 'REJECTED';
+    return request;
   }
 }

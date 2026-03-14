@@ -10,7 +10,7 @@
     <sequenceFlow id="flow1" sourceRef="start" targetRef="validateRequest"/>
 
     <userTask id="validateRequest" name="Supervisor Review"
-              flowable:assignee="${supervisor}">
+              flowable:candidateGroups="supervisor">
       <documentation>Supervisor reviews the ID renewal request</documentation>
     </userTask>
 

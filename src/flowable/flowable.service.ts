@@ -10,6 +10,15 @@ export interface FlowableProcess {
   status: string;
 }
 
+export interface FlowableTask {
+  id: string;
+  name: string;
+  assignee: string | null;
+  processInstanceId: string;
+  taskDefinitionKey: string;
+  created: string;
+}
+
 @Injectable()
 export class FlowableService {
   private readonly flowableUrl =
@@ -19,11 +28,15 @@ export class FlowableService {
 
   private readonly flowablePass = process.env.FLOWABLE_PASS || 'test';
 
+  private get auth() {
+    return { username: this.flowableUser, password: this.flowablePass };
+  }
+
   async deployProcess(): Promise<void> {
     try {
       const filePath = path.join(
-        process.cwd(),
-        'src/flowable/processes/id-renewal-process.bpmn20.xml',
+        __dirname,
+        'processes/id-renewal-process.bpmn20.xml',
       );
 
       const form = new FormData();
@@ -35,13 +48,7 @@ export class FlowableService {
       await axios.post(
         `${this.flowableUrl}/flowable-rest/service/repository/deployments`,
         form,
-        {
-          auth: {
-            username: this.flowableUser,
-            password: this.flowablePass,
-          },
-          headers: form.getHeaders(),
-        },
+        { auth: this.auth, headers: form.getHeaders() },
       );
     } catch {
       throw new HttpException(
@@ -69,12 +76,7 @@ export class FlowableService {
             { name: 'nationalId', value: nationalId },
           ],
         },
-        {
-          auth: {
-            username: this.flowableUser,
-            password: this.flowablePass,
-          },
-        },
+        { auth: this.auth },
       );
       return response.data;
     } catch {
@@ -89,18 +91,58 @@ export class FlowableService {
     try {
       const response = await axios.get<FlowableProcess>(
         `${this.flowableUrl}/flowable-rest/service/runtime/process-instances/${processInstanceId}`,
-        {
-          auth: {
-            username: this.flowableUser,
-            password: this.flowablePass,
-          },
-        },
+        { auth: this.auth },
       );
       return response.data;
     } catch {
       throw new HttpException(
         'Process instance not found',
         HttpStatus.NOT_FOUND,
+      );
+    }
+  }
+
+  async getSupervisorTasks(): Promise<FlowableTask[]> {
+    try {
+      const response = await axios.get<{ data: FlowableTask[] }>(
+        `${this.flowableUrl}/flowable-rest/service/runtime/tasks?candidateGroup=supervisor`,
+        { auth: this.auth },
+      );
+      return response.data.data ?? [];
+    } catch {
+      throw new HttpException(
+        'Flowable workflow service unavailable',
+        HttpStatus.SERVICE_UNAVAILABLE,
+      );
+    }
+  }
+
+  async getTaskById(taskId: string): Promise<FlowableTask> {
+    try {
+      const response = await axios.get<FlowableTask>(
+        `${this.flowableUrl}/flowable-rest/service/runtime/tasks/${taskId}`,
+        { auth: this.auth },
+      );
+      return response.data;
+    } catch {
+      throw new HttpException('Task not found', HttpStatus.NOT_FOUND);
+    }
+  }
+
+  async completeTask(taskId: string, approved: boolean): Promise<void> {
+    try {
+      await axios.post(
+        `${this.flowableUrl}/flowable-rest/service/runtime/tasks/${taskId}`,
+        {
+          action: 'complete',
+          variables: [{ name: 'approved', value: approved }],
+        },
+        { auth: this.auth },
+      );
+    } catch {
+      throw new HttpException(
+        'Failed to complete task',
+        HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }
