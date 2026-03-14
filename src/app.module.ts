@@ -14,7 +14,7 @@ import { ScholarshipModule } from './scholarship/scholarship.module';
     TypeOrmModule.forRoot({
       type: 'postgres',
       host: 'localhost',
-      port: 5432,
+      port: 5433,
       username: 'egov_user',
       password: 'egov_pass',
       database: 'e_gov_portal',
