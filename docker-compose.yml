@@ -1,6 +1,13 @@
-version: '3.8'
-
 services:
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: egov-mailpit
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+    networks:
+      - egov-network
+
   postgres:
     image: postgres:15-alpine
     container_name: egov-postgres
@@ -10,14 +17,15 @@ services:
       POSTGRES_USER: egov_user
       POSTGRES_PASSWORD: egov_pass
       POSTGRES_HOST_AUTH_METHOD: trust
+    command: postgres -c ssl=off
     ports:
-      - '5432:5432'
+      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - egov-network
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U egov_user -d egov_db']
+      test: ["CMD-SHELL", "pg_isready -U egov_user -d egov_db"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -38,7 +46,7 @@ services:
     volumes:
       - ./keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json
     ports:
-      - '8080:8080'
+      - "8080:8080"
     depends_on:
       postgres:
         condition: service_healthy
@@ -49,18 +57,26 @@ services:
     image: gorules/brms:latest
     container_name: egov-gorules
     ports:
-      - '8090:8090'
+      - "8090:80"
     environment:
       DB_HOST: postgres
-      DB_NAME: egov_db
+      DB_NAME: gorules_db
       DB_USER: egov_user
       DB_PASSWORD: egov_pass
-      DB_SSL: "false"
+      DB_SSL_DISABLED: "true"
       DB_PORT: "5432"
-      DATABASE_URL: "postgresql://egov_user:egov_pass@postgres:5432/egov_db?sslmode=disable"
+      EMAIL_ENABLED: "true"
+      EMAIL_HOST: mailpit
+      EMAIL_PORT: "1025"
+      EMAIL_SECURE: "false"
+      EMAIL_FROM: noreply@local.test
+      EMAIL_TLS_REJECT_UNAUTHORIZED: "false"
+      DATABASE_URL: "postgresql://egov_user:egov_pass@postgres:5432/gorules_db?sslmode=disable"
     volumes:
       - ./src/gorules/decisions:/app/decisions
     depends_on:
+      mailpit:
+        condition: service_started
       postgres:
         condition: service_healthy
     networks:
@@ -88,12 +104,12 @@ services:
       dockerfile: Dockerfile
     container_name: egov-nestjs
     ports:
-      - '3000:3000'
+      - "3000:3000"
     environment:
       KEYCLOAK_URL: http://keycloak:8080
       KEYCLOAK_REALM: egov-portal
       KEYCLOAK_CLIENT_ID: id-renewal-api
-      GORULES_URL: http://gorules:8090
+      GORULES_URL: http://gorules:80
       FLOWABLE_URL: http://flowable:8080
       FLOWABLE_USER: admin
       FLOWABLE_PASS: test
