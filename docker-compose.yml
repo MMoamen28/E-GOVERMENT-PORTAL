@@ -4,10 +4,12 @@ services:
   postgres:
     image: postgres:15-alpine
     container_name: egov-postgres
+    command: postgres -c ssl=off
     environment:
       POSTGRES_DB: egov_db
       POSTGRES_USER: egov_user
       POSTGRES_PASSWORD: egov_pass
+      POSTGRES_HOST_AUTH_METHOD: trust
     ports:
       - '5432:5432'
     volumes:
@@ -43,6 +45,43 @@ services:
     networks:
       - egov-network
 
+  gorules:
+    image: gorules/brms:latest
+    container_name: egov-gorules
+    ports:
+      - '8090:8090'
+    environment:
+      DB_HOST: postgres
+      DB_NAME: egov_db
+      DB_USER: egov_user
+      DB_PASSWORD: egov_pass
+      DB_SSL: "false"
+      DB_PORT: "5432"
+      DATABASE_URL: "postgresql://egov_user:egov_pass@postgres:5432/egov_db?sslmode=disable"
+    volumes:
+      - ./src/gorules/decisions:/app/decisions
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - egov-network
+
+  flowable:
+    image: flowable/flowable-rest:6.8.0
+    container_name: egov-flowable
+    ports:
+      - '8082:8080'
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/egov_db
+      - SPRING_DATASOURCE_USERNAME=egov_user
+      - SPRING_DATASOURCE_PASSWORD=egov_pass
+      - SPRING_DATASOURCE_DRIVER_CLASS_NAME=org.postgresql.Driver
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - egov-network
+
   nestjs-api:
     build:
       context: .
@@ -55,12 +94,18 @@ services:
       KEYCLOAK_REALM: egov-portal
       KEYCLOAK_CLIENT_ID: id-renewal-api
       GORULES_URL: http://gorules:8090
+      FLOWABLE_URL: http://flowable:8080
+      FLOWABLE_USER: admin
+      FLOWABLE_PASS: test
     depends_on:
       postgres:
         condition: service_healthy
+      gorules:
+        condition: service_started
+      flowable:
+        condition: service_started
     networks:
       - egov-network
-
 
 volumes:
   postgres_data:
