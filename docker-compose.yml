@@ -17,11 +17,11 @@ services:
       POSTGRES_USER: egov_user
       POSTGRES_PASSWORD: egov_pass
       POSTGRES_HOST_AUTH_METHOD: trust
-    command: postgres -c ssl=off
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
       - egov-network
     healthcheck:
@@ -111,7 +111,7 @@ services:
       KEYCLOAK_CLIENT_ID: id-renewal-api
       GORULES_URL: http://gorules:80
       FLOWABLE_URL: http://flowable:8080
-      FLOWABLE_USER: admin
+      FLOWABLE_USER: rest-admin
       FLOWABLE_PASS: test
     depends_on:
       postgres:
