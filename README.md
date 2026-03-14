@@ -23,7 +23,55 @@
 
 ## Description
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+E-Government Portal — Scholarship feature (NestJS, TypeORM, PostgreSQL, Keycloak, GoRules, Flowable).
+
+---
+
+## Getting started (Features/Scholarship)
+
+**This branch is the integration branch.** Pull it and run with no extra setup.
+
+### 1. Pull the branch
+
+```bash
+git checkout Features/Scholarship
+git pull
+```
+
+### 2. Start dependencies (PostgreSQL + Keycloak)
+
+```bash
+docker compose up -d
+```
+
+### 3. Install and run the app
+
+```bash
+npm install
+npm run start:dev
+```
+
+You get:
+
+- **API** at `http://localhost:3000`
+- **Scholarship** — `POST /scholarship/apply`, `GET /scholarship`, `GET /scholarship/:id` (JWT required; see `docs/KEYCLOAK_SETUP.md` for test users and token)
+- **PostgreSQL** on `localhost:5432` (user: `egov_user`, db: `e_gov_portal`) — no setup
+- **Keycloak** at `http://localhost:8080` (realm + users auto-imported) — no setup
+
+**Ready with zero setup:** DB, Keycloak, NestJS auth, scholarship API (with placeholder rule logic).  
+**Planned next:** GoRules API wiring (rules already in `rules/`); Flowable (engine + BPMN + NestJS client). See `docs/FEATURES_SCHOLARSHIP.md`.
+
+### 4. Create your sub-branch and work
+
+```bash
+git checkout -b your-feature-branch
+# implement, then push improvements back to Features/Scholarship when ready
+```
+
+See **`docs/FEATURES_SCHOLARSHIP.md`** for the full checklist (GoRules, Keycloak, Flowable).  
+Keycloak setup: **`docs/KEYCLOAK_SETUP.md`**. Flowable: **`docs/FLOWABLE_SETUP.md`**.
+
+---
 
 ## Project setup
 
