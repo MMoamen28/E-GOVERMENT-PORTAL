@@ -1,4 +1,4 @@
-import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
+import { Injectable, HttpException, HttpStatus, Logger } from '@nestjs/common';
 import axios from 'axios';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -13,19 +13,26 @@ export interface FlowableProcess {
 export interface FlowableTask {
   id: string;
   name: string;
-  assignee: string | null;
   processInstanceId: string;
-  taskDefinitionKey: string;
-  created: string;
+  variables?: any[];
+}
+
+interface FlowableProcessInstance {
+  id: string;
+  processInstanceId?: string;
+  [key: string]: unknown;
+}
+
+interface FlowableDeployment {
+  id: string;
+  [key: string]: unknown;
 }
 
 @Injectable()
 export class FlowableService {
-  private readonly flowableUrl =
-    process.env.FLOWABLE_URL || 'http://localhost:8082';
-
+  private readonly logger = new Logger(FlowableService.name);
+  private readonly flowableUrl = process.env.FLOWABLE_URL || 'http://localhost:8082';
   private readonly flowableUser = process.env.FLOWABLE_USER || 'rest-admin';
-
   private readonly flowablePass = process.env.FLOWABLE_PASS || 'test';
 
   private get auth() {
@@ -39,13 +46,13 @@ export class FlowableService {
         'processes/id-renewal-process.bpmn20.xml',
       );
 
-      const form = new FormData();
+      const form: any = new FormData();
       form.append('file', fs.createReadStream(filePath), {
         filename: 'id-renewal-process.bpmn20.xml',
         contentType: 'application/xml',
       });
 
-      await axios.post(
+      await axios.post<FlowableDeployment>(
         `${this.flowableUrl}/flowable-rest/service/repository/deployments`,
         form,
         { auth: this.auth, headers: form.getHeaders() },
@@ -59,20 +66,19 @@ export class FlowableService {
   }
 
   async startRenewalProcess(
-    requestId: string,
+    id: string,
     firstName: string,
     lastName: string,
     nationalId: string,
-  ): Promise<FlowableProcess> {
+  ): Promise<FlowableProcessInstance> {
     try {
-      const response = await axios.post<FlowableProcess>(
+      const response = await axios.post<FlowableProcessInstance>(
         `${this.flowableUrl}/flowable-rest/service/runtime/process-instances`,
         {
           processDefinitionKey: 'id-renewal-process',
           variables: [
-            { name: 'requestId', value: requestId },
-            { name: 'firstName', value: firstName },
-            { name: 'lastName', value: lastName },
+            { name: 'requestId', value: id },
+            { name: 'citizenName', value: `${firstName} ${lastName}` },
             { name: 'nationalId', value: nationalId },
           ],
         },
@@ -81,22 +87,22 @@ export class FlowableService {
       return response.data;
     } catch {
       throw new HttpException(
-        'Flowable workflow service unavailable',
-        HttpStatus.SERVICE_UNAVAILABLE,
+        'Failed to start workflow process',
+        HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }
 
-  async getProcessStatus(processInstanceId: string): Promise<FlowableProcess> {
+  async getStatus(processInstanceId: string): Promise<string> {
     try {
-      const response = await axios.get<FlowableProcess>(
+      const response = await axios.get<FlowableProcessInstance>(
         `${this.flowableUrl}/flowable-rest/service/runtime/process-instances/${processInstanceId}`,
         { auth: this.auth },
       );
-      return response.data;
+      return response.data ? 'ACTIVE' : 'COMPLETED';
     } catch {
       throw new HttpException(
-        'Process instance not found',
+        'Workflow process not found',
         HttpStatus.NOT_FOUND,
       );
     }

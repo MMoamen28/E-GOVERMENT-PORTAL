@@ -5,9 +5,16 @@ import { AuthModule } from './auth/auth.module';
 import { GoRulesModule } from './gorules/gorules.module';
 import { IdRenewalModule } from './id-renewal/id-renewal.module';
 import { FlowableModule } from './flowable/flowable.module';
+import { AuthApiModule } from './auth-api/auth-api.module';
 
 @Module({
-  imports: [AuthModule, GoRulesModule, IdRenewalModule, FlowableModule],
+  imports: [
+    AuthModule,
+    GoRulesModule,
+    IdRenewalModule,
+    FlowableModule,
+    AuthApiModule,
+  ],
   controllers: [AppController],
   providers: [AppService],
 })

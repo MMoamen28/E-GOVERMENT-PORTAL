@@ -1,0 +1,47 @@
+# E-Government Portal: ID Renewal Module - Project Report
+
+## 1. What We Have Done
+We have successfully built a full-stack, containerized ID Renewal system for the E-Government Portal.
+
+### Backend (NestJS)
+- Authentication API: Created a custom /auth module to handle citizen registration and login. This acts as a security proxy for Keycloak, solving browser CORS errors.
+- ID Renewal Core: Implemented endpoints for submitting requests (POST /id-renewal), checking status (GET /id-renewal/:id), and fetching all requests for staff (GET /id-renewal).
+- Workflow Integration: Connected the API to Flowable 6.8.0 to manage the BPMN renewal process. Fixed deployment paths and variable mapping.
+- Business Rules: Integrated GoRules (Zen Engine) to validate citizen names automatically before starting a workflow.
+- Persistence: Configured TypeORM with PostgreSQL to store request records alongside workflow instance IDs.
+
+### Frontend (Vanilla HTML/JS/CSS)
+- Registration Page: Built a modern registration flow that creates users in Keycloak and automatically assigns the citizen role.
+- Login Page: Implemented JWT-based login using Keycloak's OpenID Connect flow via the NestJS proxy.
+- Role-Based Dashboard: Created a dynamic id-renewal.html that changes based on the user's role:
+    - Citizens: Can submit new requests and track their status.
+    - Supervisors/Admins: Can view a list of all incoming requests and pending workflow tasks.
+    - Admins: Can deploy the latest BPMN process files to Flowable.
+- Responsive UI: Applied the E-Gov Portal design system (Inter font, blueprint blue/white theme, modern cards and badges).
+
+### Infrastructure (Docker)
+Integrated all services into a unified docker-compose.yml:
+- egov-postgres (Database)
+- egov-keycloak (Identity Management)
+- egov-gorules (Rules Engine)
+- egov-flowable (Workflows)
+- egov-mailpit (Email Testing)
+- egov-nestjs (API)
+- egov-frontend (Nginx static server)
+
+---
+
+## 2. Problems We Faced
+- Keycloak CORS Conflicts: Originally, the browser tried to call Keycloak (8080) directly, leading to "Connection Refused/Blocked" errors. We solved this by routing all auth through the NestJS backend (3000).
+- TypeScript Build ("Conflict") Errors: We encountered several TS2339 and TS2322 errors where properties like reason were missing from DTOs or entity types didn't account for null values. We fixed these by strictly defining our DTOs and database entities.
+- Flowable 404s: Initial attempts to call Flowable failed because the API paths in REST v6.8 are nested (e.g., /repository/deployments vs /deployments). We corrected these paths and added a retry logic for workflow startup.
+- ESLint Strictness: The project uses high-security linting. We had to fix "unsafe return" and "unsafe member access" errors by removing any types and using explicit interfaces for API responses.
+
+---
+
+## 3. What We Want To Do (Next Steps)
+1. Email Notifications: Wire up the egov-mailpit service to send automatic emails to citizens when their ID is approved or rejected.
+2. Document Uploads: Add a feature for citizens to upload a scan of their old ID or supporting documents using Multer/S3.
+3. Advanced Rules: Expand GoRules logic to check for criminal records or unpaid fines before allowing a renewal.
+4. Admin UI: Replace the current basic admin dashboard with a fully-featured "Admin Panel" showing analytics and system health metrics.
+5. Audit Logs: Implement a dedicated logging service to track who approved/rejected each request for transparency.

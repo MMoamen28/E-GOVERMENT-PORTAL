@@ -24,10 +24,10 @@ export class RenewalRequestEntity {
   status: string;
 
   @Column({ nullable: true })
-  workflowId: string;
+  workflowId: string | null;
 
   @Column({ nullable: true })
-  rejectionReason: string;
+  rejectionReason: string | null;
 
   @CreateDateColumn()
   submittedAt: Date;

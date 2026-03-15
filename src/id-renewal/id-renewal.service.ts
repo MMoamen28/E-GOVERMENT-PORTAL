@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-
 import {
   Injectable,
   NotFoundException,
@@ -52,7 +50,7 @@ export class IdRenewalService {
         saved.lastName,
         saved.nationalId,
       );
-      saved.workflowId = process.processInstanceId;
+      saved.workflowId = process.processInstanceId ?? process.id;
       await this.renewalRepository.save(saved);
     } catch {
       saved.workflowId = 'workflow-unavailable';
