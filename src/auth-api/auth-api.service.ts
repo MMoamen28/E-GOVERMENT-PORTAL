@@ -27,7 +27,7 @@ export class AuthApiService {
   private readonly realm = process.env.KEYCLOAK_REALM || 'egov-portal';
   private readonly clientId =
     process.env.KEYCLOAK_CLIENT_ID || 'id-renewal-api';
-  private readonly clientSecret = 'sH5op5ZTOuvYIItcw3hqchqLGTt7sYgo';
+  private readonly clientSecret = 'xPnisDToolKxJGD9GRsBx1Tn3G0zcbKD';
 
   async login(dto: LoginDto): Promise<KeycloakTokenResponse> {
     const params = new URLSearchParams({

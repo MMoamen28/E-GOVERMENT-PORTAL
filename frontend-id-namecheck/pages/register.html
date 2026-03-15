@@ -16,6 +16,8 @@
         .alert-box { padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; display: none; align-items: flex-start; gap: 0.75rem; font-size: 0.9rem; }
         .alert-box.success { background: rgba(5,150,105,0.1); color: #065f46; border: 1px solid #059669; }
         .alert-box.error { background: rgba(220,38,38,0.1); color: #991b1b; border: 1px solid #dc2626; }
+        .field-error { color: #dc2626; font-size: 0.78rem; margin-top: 0.25rem; display: block; min-height: 1em; }
+        .form-control.invalid { border-color: #dc2626; }
     </style>
 </head>
 <body>
@@ -44,26 +46,31 @@
                         <a href="register.html" class="auth-tab active">Register</a>
                     </div>
                     <div id="alertBox" class="alert-box"></div>
-                    <form id="registerForm">
+                    <form id="registerForm" novalidate>
                         <div class="input-group">
                             <label class="form-label">First Name</label>
-                            <input type="text" id="firstName" class="form-control" required>
+                            <input type="text" id="firstName" class="form-control" placeholder="Enter your first name">
+                            <small class="field-error" id="err-firstName"></small>
                         </div>
                         <div class="input-group">
                             <label class="form-label">Last Name</label>
-                            <input type="text" id="lastName" class="form-control" required>
+                            <input type="text" id="lastName" class="form-control" placeholder="Enter your last name">
+                            <small class="field-error" id="err-lastName"></small>
                         </div>
                         <div class="input-group">
                             <label class="form-label">Username</label>
-                            <input type="text" id="username" class="form-control" required>
+                            <input type="text" id="username" class="form-control" placeholder="Letters, numbers and _ only">
+                            <small class="field-error" id="err-username"></small>
                         </div>
                         <div class="input-group">
                             <label class="form-label">Email</label>
-                            <input type="email" id="email" class="form-control" required>
+                            <input type="email" id="email" class="form-control" placeholder="example@email.com">
+                            <small class="field-error" id="err-email"></small>
                         </div>
                         <div class="input-group">
                             <label class="form-label">Password</label>
-                            <input type="password" id="password" class="form-control" minlength="8" required>
+                            <input type="password" id="password" class="form-control" placeholder="At least 8 characters">
+                            <small class="field-error" id="err-password"></small>
                         </div>
                         <button type="submit" class="btn btn-primary btn-block" id="regBtn">Register</button>
                     </form>
@@ -79,40 +86,64 @@
     </section>
 </div>
 <script>
-document.getElementById('registerForm').addEventListener('submit', async (e) => {
+function setError(fieldId, msg) {
+    var errEl = document.getElementById('err-' + fieldId);
+    var input = document.getElementById(fieldId);
+    if (errEl) errEl.innerText = msg;
+    if (input) input.classList.toggle('invalid', !!msg);
+}
+function clearErrors() {
+    ['firstName','lastName','username','email','password'].forEach(function(f){ setError(f,''); });
+}
+function validate(data) {
+    var nameRx = /^[A-Za-z\u0600-\u06FF][A-Za-z\u0600-\u06FF\s]{1,49}$/;
+    var usernameRx = /^[A-Za-z0-9_]{3,30}$/;
+    var emailRx = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    var valid = true;
+    if (!data.firstName.trim()) { setError('firstName','First name is required.'); valid=false; }
+    else if (!nameRx.test(data.firstName.trim())) { setError('firstName','Letters only, 2–50 characters.'); valid=false; }
+    if (!data.lastName.trim()) { setError('lastName','Last name is required.'); valid=false; }
+    else if (!nameRx.test(data.lastName.trim())) { setError('lastName','Letters only, 2–50 characters.'); valid=false; }
+    if (!data.username.trim()) { setError('username','Username is required.'); valid=false; }
+    else if (!usernameRx.test(data.username.trim())) { setError('username','3–30 chars, letters/numbers/_ only, no spaces.'); valid=false; }
+    if (!data.email.trim()) { setError('email','Email is required.'); valid=false; }
+    else if (!emailRx.test(data.email.trim())) { setError('email','Enter a valid email address.'); valid=false; }
+    if (!data.password) { setError('password','Password is required.'); valid=false; }
+    else if (data.password.length < 8) { setError('password','Password must be at least 8 characters.'); valid=false; }
+    return valid;
+}
+document.getElementById('registerForm').addEventListener('submit', async function(e) {
     e.preventDefault();
-    const alertBox = document.getElementById('alertBox');
-    const btn = document.getElementById('regBtn');
-    
-    const data = {
+    clearErrors();
+    var alertBox = document.getElementById('alertBox');
+    var btn = document.getElementById('regBtn');
+    alertBox.style.display = 'none';
+    var data = {
         firstName: document.getElementById('firstName').value,
         lastName: document.getElementById('lastName').value,
         username: document.getElementById('username').value,
         email: document.getElementById('email').value,
         password: document.getElementById('password').value
     };
-
+    if (!validate(data)) return;
     btn.disabled = true;
     btn.innerText = 'Creating account...';
-
     try {
-        const res = await fetch('http://localhost:3000/auth/register', {
+        var res = await fetch('http://localhost:3000/auth/register', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)
         });
-
         if (res.ok) {
             document.getElementById('registerForm').style.display = 'none';
             document.getElementById('successCard').style.display = 'block';
-            alertBox.style.display = 'none';
         } else {
-            const err = await res.json();
+            var err = await res.json();
             alertBox.innerText = err.message || 'Registration failed';
             alertBox.className = 'alert-box error';
             alertBox.style.display = 'flex';
         }
-    } catch (err) {
+    } catch(e) {
         alertBox.innerText = 'Cannot connect to server. Check if NestJS is running.';
         alertBox.className = 'alert-box error';
         alertBox.style.display = 'flex';

@@ -7,6 +7,10 @@
     <link rel="stylesheet" href="../css/style.css">
     <link rel="stylesheet" href="../css/id-renewal.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .field-error { color: #dc2626; font-size: 0.78rem; margin-top: 0.25rem; display: block; min-height: 1em; }
+        .form-control.invalid { border-color: #dc2626; }
+    </style>
 </head>
 <body>
     <nav class="navbar solid">
@@ -32,18 +36,21 @@
             <div id="citizenView" style="display:none;">
                 <div class="form-container">
                     <h3>New Renewal Request</h3>
-                    <form id="renewalForm">
+                    <form id="renewalForm" novalidate>
                         <div class="input-group">
                             <label class="form-label">First Name</label>
-                            <input type="text" id="fn" class="form-control" required>
+                            <input type="text" id="fn" class="form-control" placeholder="Enter first name">
+                            <small class="field-error" id="err-fn"></small>
                         </div>
                         <div class="input-group">
                             <label class="form-label">Last Name</label>
-                            <input type="text" id="ln" class="form-control" required>
+                            <input type="text" id="ln" class="form-control" placeholder="Enter last name">
+                            <small class="field-error" id="err-ln"></small>
                         </div>
                         <div class="input-group">
                             <label class="form-label">National ID</label>
-                            <input type="text" id="nid" class="form-control" required maxlength="10">
+                            <input type="text" id="nid" class="form-control" placeholder="14-digit national ID number" maxlength="14">
+                            <small class="field-error" id="err-nid"></small>
                         </div>
                         <button type="submit" class="btn btn-primary">Submit Request</button>
                     </form>
@@ -51,9 +58,12 @@
 
                 <div class="card" style="margin-top:2rem;">
                     <h3>Track My Request</h3>
-                    <div class="input-group" style="display:flex; gap:1rem;">
-                        <input type="text" id="trackId" class="form-control" placeholder="Enter Request ID">
-                        <button onclick="trackRequest()" class="btn btn-secondary">Track</button>
+                    <div class="input-group" style="display:flex; gap:1rem; align-items:flex-start; flex-direction:column;">
+                        <div style="display:flex; gap:1rem; width:100%;">
+                            <input type="text" id="trackId" class="form-control" placeholder="Enter Request ID (UUID)">
+                            <button onclick="trackRequest()" class="btn btn-secondary">Track</button>
+                        </div>
+                        <small class="field-error" id="err-trackId"></small>
                     </div>
                     <div id="trackResult" style="margin-top:1rem;"></div>
                 </div>

@@ -1,5 +1,4 @@
-import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
-import axios from 'axios';
+import { Injectable } from '@nestjs/common';
 
 export interface NameValidationResult {
   status: 'ACCEPT' | 'REJECT';
@@ -8,24 +7,13 @@ export interface NameValidationResult {
 
 @Injectable()
 export class GoRulesService {
-  private readonly goRulesUrl =
-    process.env.GORULES_URL || 'http://localhost:8090';
-
-  async validateName(
-    firstName: string,
-    lastName: string,
-  ): Promise<NameValidationResult> {
-    try {
-      const response = await axios.post<NameValidationResult>(
-        `${this.goRulesUrl}/api/v1/evaluate/name-check`,
-        { firstName, lastName },
-      );
-      return response.data;
-    } catch {
-      throw new HttpException(
-        'Name validation service unavailable',
-        HttpStatus.SERVICE_UNAVAILABLE,
-      );
+  validateName(firstName: string, lastName: string): NameValidationResult {
+    if (!firstName || firstName.trim() === '') {
+      return { status: 'REJECT', reason: 'First name is required' };
     }
+    if (!lastName || lastName.trim() === '') {
+      return { status: 'REJECT', reason: 'Last name is required' };
+    }
+    return { status: 'ACCEPT', reason: 'Name is valid' };
   }
 }

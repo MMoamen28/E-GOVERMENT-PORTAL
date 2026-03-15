@@ -5,7 +5,7 @@ import * as path from 'path';
 import FormData from 'form-data';
 
 export interface FlowableProcess {
-  processInstanceId: string;
+  id: string;
   processDefinitionKey: string;
   status: string;
 }
@@ -17,6 +17,7 @@ export interface FlowableTask {
   processInstanceId: string;
   taskDefinitionKey: string;
   created: string;
+  variables: Record<string, string>;
 }
 
 @Injectable()
@@ -59,7 +60,7 @@ export class FlowableService {
   async deployProcess(): Promise<void> {
     const filePath = path.join(
       __dirname,
-      'processes/id-renewal-process.bpmn20.xml',
+      '../../flowable/processes/id-renewal-process.bpmn20.xml',
     );
 
     if (!fs.existsSync(filePath)) {
@@ -133,11 +134,27 @@ export class FlowableService {
 
   async getSupervisorTasks(): Promise<FlowableTask[]> {
     try {
-      const response = await axios.get<{ data: FlowableTask[] }>(
-        `${this.flowableUrl}/flowable-rest/service/runtime/tasks?candidateGroup=supervisor`,
+      const response = await axios.get<{
+        data: (FlowableTask & {
+          variables: { name: string; value: string }[];
+        })[];
+      }>(
+        `${this.flowableUrl}/flowable-rest/service/runtime/tasks?candidateGroup=supervisor&includeProcessVariables=true`,
         { auth: this.auth },
       );
-      return response.data.data ?? [];
+      return (response.data.data ?? []).map((task) => {
+        const vars: Record<string, string> = {};
+        (task.variables ?? []).forEach(
+          (v: { name: string; value: string }) => (vars[v.name] = v.value),
+        );
+        return {
+          ...task,
+          variables: {
+            ...vars,
+            citizenName: `${vars.firstName ?? ''} ${vars.lastName ?? ''}`.trim(),
+          },
+        };
+      });
     } catch (err) {
       const msg = this.extractError(
         err,

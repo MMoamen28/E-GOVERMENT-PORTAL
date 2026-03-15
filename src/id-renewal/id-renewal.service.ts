@@ -25,7 +25,7 @@ export class IdRenewalService {
   }
 
   async submitRequest(dto: CreateRenewalDto): Promise<RenewalRequestEntity> {
-    const validation = await this.goRulesService.validateName(
+    const validation = this.goRulesService.validateName(
       dto.firstName,
       dto.lastName,
     );
@@ -50,7 +50,7 @@ export class IdRenewalService {
         saved.lastName,
         saved.nationalId,
       );
-      saved.workflowId = process.processInstanceId;
+      saved.workflowId = process.id;
       await this.renewalRepository.save(saved);
     } catch {
       saved.workflowId = 'workflow-unavailable';
