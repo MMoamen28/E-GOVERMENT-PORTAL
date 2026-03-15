@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: egov-postgres
+    environment:
+      POSTGRES_USER: egov_user
+      POSTGRES_PASSWORD: egov_password
+      POSTGRES_DB: egov_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - egov-network
+
+networks:
+  egov-network:
+    driver: bridge
+
+volumes:
+  pgdata:
