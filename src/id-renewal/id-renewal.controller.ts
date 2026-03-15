@@ -26,7 +26,7 @@ import { Roles } from '../auth/roles.decorator';
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('id-renewal')
 export class IdRenewalController {
-  constructor(private readonly idRenewalService: IdRenewalService) { }
+  constructor(private readonly idRenewalService: IdRenewalService) {}
 
   @Post('deploy')
   @Roles('admin')

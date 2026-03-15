@@ -123,6 +123,18 @@ services:
     networks:
       - egov-network
 
+  frontend:
+    build:
+      context: ./frontend-id-namecheck
+      dockerfile: Dockerfile
+    container_name: egov-frontend
+    ports:
+      - "4200:80"
+    depends_on:
+      - nestjs-api
+    networks:
+      - egov-network
+
 volumes:
   postgres_data:
 

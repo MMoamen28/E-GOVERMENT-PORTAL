@@ -1,5 +1,5 @@
-import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
-import axios from 'axios';
+import { Injectable, HttpException, HttpStatus, Logger } from '@nestjs/common';
+import axios, { AxiosError } from 'axios';
 import * as fs from 'fs';
 import * as path from 'path';
 import FormData from 'form-data';
@@ -21,6 +21,8 @@ export interface FlowableTask {
 
 @Injectable()
 export class FlowableService {
+  private readonly logger = new Logger(FlowableService.name);
+
   private readonly flowableUrl =
     process.env.FLOWABLE_URL || 'http://localhost:8082';
 
@@ -32,29 +34,57 @@ export class FlowableService {
     return { username: this.flowableUser, password: this.flowablePass };
   }
 
-  async deployProcess(): Promise<void> {
-    try {
-      const filePath = path.join(
-        __dirname,
-        'processes/id-renewal-process.bpmn20.xml',
+  private extractError(err: unknown, fallback: string): string {
+    if (err instanceof AxiosError) {
+      const status = err.response?.status;
+      const data: unknown = err.response?.data;
+      const dataStr =
+        typeof data === 'object' && data !== null ? JSON.stringify(data) : '';
+      const msg = dataStr || '';
+      this.logger.error(
+        `Flowable HTTP ${status ?? 'N/A'}: ${msg || err.message}`,
       );
+      if (status === 401)
+        return 'Flowable authentication failed — check FLOWABLE_USER / FLOWABLE_PASS in .env';
+      if (status === 404)
+        return 'Flowable resource not found (is the process deployed?)';
+      if (status === 409)
+        return 'Flowable conflict — process may already be deployed';
+      return msg || err.message || fallback;
+    }
+    this.logger.error(`Non-HTTP error: ${String(err)}`);
+    return fallback;
+  }
 
-      const form = new FormData();
-      form.append('file', fs.createReadStream(filePath), {
-        filename: 'id-renewal-process.bpmn20.xml',
-        contentType: 'application/xml',
-      });
+  async deployProcess(): Promise<void> {
+    const filePath = path.join(
+      __dirname,
+      'processes/id-renewal-process.bpmn20.xml',
+    );
 
+    if (!fs.existsSync(filePath)) {
+      throw new HttpException(
+        `BPMN file not found at: ${filePath}`,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+
+    const form = new FormData();
+    form.append('file', fs.createReadStream(filePath), {
+      filename: 'id-renewal-process.bpmn20.xml',
+      contentType: 'application/xml',
+    });
+
+    try {
       await axios.post(
         `${this.flowableUrl}/flowable-rest/service/repository/deployments`,
         form,
         { auth: this.auth, headers: form.getHeaders() },
       );
-    } catch {
-      throw new HttpException(
-        'Failed to deploy process',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+      this.logger.log('BPMN process deployed successfully');
+    } catch (err) {
+      const msg = this.extractError(err, 'Failed to deploy BPMN process');
+      throw new HttpException(msg, HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 
@@ -79,11 +109,12 @@ export class FlowableService {
         { auth: this.auth },
       );
       return response.data;
-    } catch {
-      throw new HttpException(
+    } catch (err) {
+      const msg = this.extractError(
+        err,
         'Flowable workflow service unavailable',
-        HttpStatus.SERVICE_UNAVAILABLE,
       );
+      throw new HttpException(msg, HttpStatus.SERVICE_UNAVAILABLE);
     }
   }
 
@@ -94,11 +125,9 @@ export class FlowableService {
         { auth: this.auth },
       );
       return response.data;
-    } catch {
-      throw new HttpException(
-        'Process instance not found',
-        HttpStatus.NOT_FOUND,
-      );
+    } catch (err) {
+      const msg = this.extractError(err, 'Process instance not found');
+      throw new HttpException(msg, HttpStatus.NOT_FOUND);
     }
   }
 
@@ -109,11 +138,12 @@ export class FlowableService {
         { auth: this.auth },
       );
       return response.data.data ?? [];
-    } catch {
-      throw new HttpException(
+    } catch (err) {
+      const msg = this.extractError(
+        err,
         'Flowable workflow service unavailable',
-        HttpStatus.SERVICE_UNAVAILABLE,
       );
+      throw new HttpException(msg, HttpStatus.SERVICE_UNAVAILABLE);
     }
   }
 
@@ -124,8 +154,9 @@ export class FlowableService {
         { auth: this.auth },
       );
       return response.data;
-    } catch {
-      throw new HttpException('Task not found', HttpStatus.NOT_FOUND);
+    } catch (err) {
+      const msg = this.extractError(err, 'Task not found');
+      throw new HttpException(msg, HttpStatus.NOT_FOUND);
     }
   }
 
@@ -135,15 +166,14 @@ export class FlowableService {
         `${this.flowableUrl}/flowable-rest/service/runtime/tasks/${taskId}`,
         {
           action: 'complete',
-          variables: [{ name: 'approved', value: approved }],
+          variables: [{ name: 'approved', value: approved, type: 'boolean' }],
         },
         { auth: this.auth },
       );
-    } catch {
-      throw new HttpException(
-        'Failed to complete task',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+      this.logger.log(`Task ${taskId} completed — approved: ${approved}`);
+    } catch (err) {
+      const msg = this.extractError(err, 'Failed to complete task');
+      throw new HttpException(msg, HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 }
