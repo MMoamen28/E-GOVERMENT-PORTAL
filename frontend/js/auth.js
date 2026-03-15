@@ -28,33 +28,17 @@
     getTokenUrl: keycloakTokenUrl,
 
     async login(username, password) {
-      const url = keycloakTokenUrl();
-      const body = new URLSearchParams({
-        grant_type: 'password',
-        client_id: 'scholarship-frontend',
-        username: username,
-        password: password,
+      const res = await fetch('/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password }),
       });
-      const controller = new AbortController();
-      const timeoutId = setTimeout(function () { controller.abort(); }, 15000);
-      var res;
-      try {
-        res = await fetch(url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: body.toString(),
-          signal: controller.signal,
-        });
-      } catch (e) {
-        clearTimeout(timeoutId);
-        if (e.name === 'AbortError') throw new Error('Keycloak did not respond. Is it running at ' + url + '?');
-        throw new Error(e.message || 'Network error. Check Keycloak is running (port 8080) and CORS allows this origin.');
-      }
-      clearTimeout(timeoutId);
+
       if (!res.ok) {
-        const err = await res.json().catch(function () { return {}; });
-        throw new Error(err.error_description || err.error || 'Login failed (invalid credentials or Keycloak error)');
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || 'Login failed (invalid credentials or server error)');
       }
+
       const data = await res.json();
       const payload = decodeJwtPayload(data.access_token);
       const user = {
