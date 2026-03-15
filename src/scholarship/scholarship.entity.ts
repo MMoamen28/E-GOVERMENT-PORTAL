@@ -35,6 +35,10 @@ export class ScholarshipApplication {
   @Column({ nullable: true })
   scholarshipLevel: string;
 
+  /** From GoRules levels rule (e.g. 100, 60, 20) */
+  @Column({ type: 'int', nullable: true })
+  discount: number;
+
   /** From GoRules priority rule (e.g. 0–100) */
   @Column({ type: 'int', nullable: true })
   priorityScore: number;

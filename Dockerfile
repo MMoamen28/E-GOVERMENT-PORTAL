@@ -19,6 +19,7 @@ RUN npm ci --omit=dev
 
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/frontend ./frontend
+COPY --from=builder /app/rules ./rules
 
 EXPOSE 3000
 

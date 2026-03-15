@@ -15,7 +15,7 @@ import { ScholarshipService } from './scholarship.service';
 @ApiBearerAuth('access-token')
 @Controller('scholarship')
 @UseGuards(RolesGuard)
-@Roles('applicant', 'officer', 'admin')
+@Roles('applicant', 'officer', 'admin', 'scholarship_level_admin')
 export class ScholarshipController {
   constructor(private readonly scholarshipService: ScholarshipService) {}
 

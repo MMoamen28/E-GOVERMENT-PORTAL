@@ -2,6 +2,9 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ScholarshipApplication, ApplicationStatus } from './scholarship.entity';
+import { ZenEngine } from '@gorules/zen-engine';
+import * as fs from 'fs/promises';
+import * as path from 'path';
 
 export interface SubmitApplicationDto {
   applicantId: string;
@@ -25,8 +28,8 @@ export class ScholarshipService {
    * 4. Trigger Flowable workflow (when integrated)
    */
   async submitApplication(dto: SubmitApplicationDto): Promise<ScholarshipApplication> {
-    // TODO: Call GoRules API for levels rule (gorules/levels)
-    const scholarshipLevel = await this.evaluateLevelsRule(dto);
+    // Call GoRules API for levels rule (gorules/levels)
+    const { scholarshipLevel, discount } = await this.evaluateLevelsRule(dto);
 
     // TODO: Call GoRules API for priority rule (gorules/prioritycheck)
     const priorityScore = await this.evaluatePriorityRule(dto);
@@ -40,6 +43,7 @@ export class ScholarshipService {
       income: dto.income,
       achievements: dto.achievements,
       scholarshipLevel,
+      discount,
       priorityScore,
       documentsValid,
       status: ApplicationStatus.SUBMITTED,
@@ -64,13 +68,28 @@ export class ScholarshipService {
     return this.applicationRepo.findOne({ where: { id } });
   }
 
-  /** Placeholder: replace with actual GoRules HTTP/SDK call for levels */
-  private async evaluateLevelsRule(dto: SubmitApplicationDto): Promise<string> {
-    // Example logic; replace with GoRules API call
-    if (dto.gpa >= 3.8 && dto.income <= 2000) return 'LEVEL_3';
-    if (dto.gpa >= 3.5 && dto.income <= 4000) return 'LEVEL_2';
-    if (dto.gpa >= 3.0 && dto.income <= 6000) return 'LEVEL_1';
-    return 'NONE';
+  /** Evaluates GoRules levels using ZenEngine locally */
+  private async evaluateLevelsRule(dto: SubmitApplicationDto): Promise<{ scholarshipLevel: string; discount: number }> {
+    try {
+      const engine = new ZenEngine();
+      const rulesPath = path.join(process.cwd(), 'rules', 'scholarship');
+      const ruleContent = await fs.readFile(rulesPath);
+      const decision = engine.createDecision(ruleContent);
+
+      const response = await decision.evaluate({
+        GPA: dto.gpa,
+        Income: dto.income,
+        Achievements: dto.achievements,
+      });
+
+      const scholarshipLevel = response.result?.ScholarshipLevel || 'NONE';
+      const discount = parseInt(response.result?.Discount || '0', 10);
+
+      return { scholarshipLevel, discount };
+    } catch (e) {
+      console.error('Failed to evaluate rules/scholarship:', e);
+      return { scholarshipLevel: 'NONE', discount: 0 };
+    }
   }
 
   /** Placeholder: replace with actual GoRules API call for priority */

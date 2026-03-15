@@ -15,6 +15,9 @@ import { ScholarshipModule } from './scholarship/scholarship.module';
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', 'frontend'),
       serveRoot: '/',
+      serveStaticOptions: {
+        extensions: ['html'],
+      },
     }),
     ConfigModule.forRoot({ isGlobal: true }),
     TypeOrmModule.forRoot({
