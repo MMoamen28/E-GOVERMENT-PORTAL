@@ -1,39 +1,42 @@
 /**
- * register.js
+ * login.js
  */
 
 const API_BASE = 'http://localhost:3000/auth';
 
-document.getElementById('registerForm')?.addEventListener('submit', async (e) => {
+function fillCreds(u, p) {
+    document.getElementById('username').value = u;
+    document.getElementById('password').value = p;
+}
+
+document.getElementById('loginForm')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const alertBox = document.getElementById('alertBox');
-    const btn = document.getElementById('regBtn');
+    const btn = document.getElementById('loginBtn');
     
     const data = {
-        firstName: document.getElementById('firstName').value.trim(),
-        lastName: document.getElementById('lastName').value.trim(),
         username: document.getElementById('username').value.trim(),
-        email: document.getElementById('email').value.trim(),
         password: document.getElementById('password').value
     };
 
+    if (!data.username || !data.password) return;
+
     btn.disabled = true;
-    btn.innerText = 'Creating account...';
+    btn.innerText = 'Signing in...';
 
     try {
-        const res = await fetch(`${API_BASE}/register`, {
+        const res = await fetch(`${API_BASE}/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)
         });
 
         if (res.ok) {
-            document.getElementById('registerForm').style.display = 'none';
-            document.getElementById('successCard').style.display = 'block';
-            alertBox.style.display = 'none';
+            const tokenData = await res.json();
+            localStorage.setItem('access_token', tokenData.access_token);
+            window.location.href = 'id-renewal.html';
         } else {
-            const err = await res.json();
-            alertBox.innerText = err.message || 'Registration failed';
+            alertBox.innerText = 'Invalid username or password';
             alertBox.className = 'alert-box error';
             alertBox.style.display = 'flex';
         }
@@ -43,6 +46,6 @@ document.getElementById('registerForm')?.addEventListener('submit', async (e) =>
         alertBox.style.display = 'flex';
     } finally {
         btn.disabled = false;
-        btn.innerText = 'Register';
+        btn.innerText = 'Sign In';
     }
 });

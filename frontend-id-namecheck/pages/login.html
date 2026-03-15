@@ -4,248 +4,96 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>E-Government Portal | Login</title>
-    <meta name="description" content="Sign in to your E-Government Portal citizen account to access digital services.">
     <link rel="stylesheet" href="../css/style.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body { background-color: var(--bg-main); }
         .page-wrapper { min-height: 100vh; display: flex; flex-direction: column; }
-
-        /* Auth tabs */
-        .auth-tabs {
-            display: flex;
-            border-bottom: 2px solid #e2e8f0;
-            margin-bottom: 2rem;
-        }
-        .auth-tab {
-            flex: 1;
-            padding: 0.8rem 1rem;
-            text-align: center;
-            font-weight: 600;
-            font-size: 0.95rem;
-            cursor: pointer;
-            color: var(--text-light);
-            border-bottom: 3px solid transparent;
-            margin-bottom: -2px;
-            transition: all 0.2s ease;
-            text-decoration: none;
-        }
-        .auth-tab.active {
-            color: var(--primary-color);
-            border-bottom-color: var(--primary-color);
-        }
-        .auth-tab:hover { color: var(--primary-color); }
-
-        /* Alert box */
-        .alert-box {
-            padding: 0.9rem 1.1rem;
-            border-radius: 8px;
-            margin-bottom: 1.25rem;
-            display: flex; align-items: flex-start; gap: 0.7rem;
-            font-size: 0.9rem;
-            animation: fadeIn 0.3s ease;
-        }
-        .alert-box.error   { background: rgba(220,38,38,0.07);  border: 1px solid rgba(220,38,38,0.25);  color: #991b1b; }
-        .alert-box.success { background: rgba(5,150,105,0.08);  border: 1px solid rgba(5,150,105,0.3);   color: #065f46; }
-        .alert-box.info    { background: rgba(13,71,161,0.06);  border: 1px solid rgba(13,71,161,0.2);   color: var(--primary-color); }
-
-        /* Role badge */
-        .role-chip {
-            display: inline-block;
-            padding: 0.15rem 0.6rem;
-            border-radius: 12px;
-            font-size: 0.72rem; font-weight: 700;
-            text-transform: uppercase; letter-spacing: 0.5px;
-        }
-        .role-chip.citizen    { background: rgba(5,150,105,0.12);   color: #065f46; }
-        .role-chip.admin      { background: rgba(13,71,161,0.12);   color: var(--primary-color); }
-        .role-chip.supervisor { background: rgba(217,119,6,0.12);   color: #92400e; }
-
-        /* User info bar */
-        .user-bar {
-            background: linear-gradient(135deg, rgba(13,71,161,0.06), rgba(25,118,210,0.04));
-            border: 1px solid rgba(13,71,161,0.15);
-            border-radius: 10px;
-            padding: 1rem 1.25rem;
-            display: flex; align-items: center; gap: 0.75rem;
-            margin-bottom: 1.5rem;
-        }
-        .user-avatar {
-            width: 40px; height: 40px; border-radius: 50%;
-            background: var(--primary-color);
-            color: white; display: flex; align-items: center; justify-content: center;
-            font-weight: 700; font-size: 1rem;
-        }
-
-        @keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+        .auth-tabs { display: flex; border-bottom: 2px solid #e2e8f0; margin-bottom: 2rem; }
+        .auth-tab { flex: 1; padding: 0.8rem 1rem; text-align: center; font-weight: 600; cursor: pointer; color: var(--text-light); border-bottom: 3px solid transparent; text-decoration: none; }
+        .auth-tab.active { color: var(--primary-color); border-bottom-color: var(--primary-color); }
+        .alert-box { padding: 1rem; border-radius: 8px; margin-bottom: 1.25rem; display: none; align-items: flex-start; gap: 0.75rem; font-size: 0.9rem; }
+        .alert-box.error { background: rgba(220,38,38,0.1); color: #991b1b; border: 1px solid #dc2626; }
     </style>
 </head>
 <body>
 <div class="page-wrapper">
-
-    <!-- Navigation -->
-    <nav class="navbar solid" id="navbar">
+    <nav class="navbar solid">
         <div class="nav-container">
-            <a href="../index.html" class="logo">
-                <i class="fas fa-landmark"></i> E-Gov Portal
-            </a>
-            <div class="nav-menu" id="nav-menu">
-                <a href="../index.html" class="nav-link">Home</a>
-                <a href="services.html" class="nav-link">Services</a>
-                <a href="contact.html" class="nav-link">Contact</a>
-                <a href="#" class="btn btn-outline" id="navLogoutBtn" style="margin-left:1rem;display:none;" onclick="doLogout()">
-                    <i class="fas fa-sign-out-alt"></i> Logout
-                </a>
-            </div>
-            <div class="nav-toggle" id="nav-toggle"><i class="fas fa-bars"></i></div>
+            <a href="../index.html" class="logo"><i class="fas fa-landmark"></i> E-Gov Portal</a>
         </div>
     </nav>
-
-    <!-- Page Header -->
-    <header class="page-header" style="padding-top:80px; padding-bottom:5rem;">
-        <div class="container fade-up">
-            <span class="badge">Secure Authentication</span>
-            <h1><i class="fas fa-shield-alt" style="color:var(--accent-color);margin-right:0.5rem;"></i> Citizen Sign In</h1>
-            <p>Securely access your civil records and e-government services.</p>
+    <header class="page-header" style="padding-top:80px; padding-bottom:3rem;">
+        <div class="container">
+            <h1>Sign In</h1>
+            <p>Access your digital services.</p>
         </div>
     </header>
-
-    <!-- Login / Already Logged In section -->
-    <section class="section" style="padding-top:0; flex:1;">
+    <section class="section">
         <div class="container">
-
-            <!-- ── Already logged in state ── -->
-            <div id="alreadyLoggedIn" class="form-container fade-up delay-1" style="display:none;">
-                <div class="form-wrapper" style="text-align:center;">
-                    <div style="width:72px;height:72px;border-radius:50%;background:rgba(5,150,105,0.1);display:flex;align-items:center;justify-content:center;font-size:2rem;color:#059669;margin:0 auto 1.5rem;">
-                        <i class="fas fa-check-circle"></i>
-                    </div>
-                    <h2 style="margin-bottom:0.5rem;">You're Signed In</h2>
-                    <p style="color:var(--text-light);margin-bottom:1.5rem;" id="loggedInMsg"></p>
-                    <div id="loggedInRoles" style="margin-bottom:2rem;display:flex;gap:0.4rem;justify-content:center;flex-wrap:wrap;"></div>
-                    <div style="display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;">
-                        <a href="id-renewal.html" class="btn btn-primary"><i class="fas fa-id-card"></i> ID Renewal</a>
-                        <button onclick="doLogout()" class="btn btn-outline"><i class="fas fa-sign-out-alt"></i> Logout</button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- ── Login form ── -->
-            <div class="form-container fade-up delay-1" id="loginContainer">
+            <div class="form-container">
                 <div class="form-wrapper">
-
-                    <!-- Auth tabs -->
                     <div class="auth-tabs">
-                        <a href="login.html" class="auth-tab active">
-                            <i class="fas fa-sign-in-alt"></i> Login
-                        </a>
-                        <a href="register.html" class="auth-tab">
-                            <i class="fas fa-user-plus"></i> Register
-                        </a>
+                        <a href="login.html" class="auth-tab active">Login</a>
+                        <a href="register.html" class="auth-tab">Register</a>
                     </div>
-
-                    <h2 style="margin-bottom:0.5rem;">Welcome Back</h2>
-                    <p style="color:var(--text-light);margin-bottom:2rem;">Sign in with your Keycloak credentials to continue.</p>
-
-                    <!-- Alert box -->
-                    <div id="alertBox" class="alert-box" style="display:none;">
-                        <span id="alertIcon"></span>
-                        <span id="alertMsg"></span>
-                    </div>
-
-                    <form id="loginForm" novalidate>
-
-                        <div class="input-group" id="grp-username">
-                            <label class="form-label" for="username">
-                                <i class="fas fa-user" style="color:var(--secondary-color);margin-right:0.3rem;"></i> Username
-                            </label>
-                            <input type="text" id="username" class="form-control"
-                                   placeholder="e.g. citizen" autocomplete="username" required>
-                            <span class="error-message" id="err-username">Username is required.</span>
+                    <div id="alertBox" class="alert-box"></div>
+                    <form id="loginForm">
+                        <div class="input-group">
+                            <label class="form-label">Username</label>
+                            <input type="text" id="username" class="form-control" required>
                         </div>
-
-                        <div class="input-group" id="grp-password">
-                            <label class="form-label" for="password">
-                                <i class="fas fa-lock" style="color:var(--secondary-color);margin-right:0.3rem;"></i> Password
-                            </label>
-                            <div style="position:relative;">
-                                <input type="password" id="password" class="form-control"
-                                       placeholder="Enter your password" autocomplete="current-password" required
-                                       style="padding-right:3rem;">
-                                <button type="button" id="pwToggle"
-                                    style="position:absolute;right:0.75rem;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text-light);font-size:1rem;">
-                                    <i class="fas fa-eye"></i>
-                                </button>
-                            </div>
-                            <span class="error-message" id="err-password">Password is required.</span>
+                        <div class="input-group">
+                            <label class="form-label">Password</label>
+                            <input type="password" id="password" class="form-control" required>
                         </div>
-
-                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2rem;font-size:0.9rem;">
-                            <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;">
-                                <input type="checkbox" id="rememberMe"> Remember me
-                            </label>
-                            <a href="#" style="color:var(--primary-color);font-weight:500;">Forgot Password?</a>
-                        </div>
-
-                        <button type="submit" class="btn btn-primary btn-block" id="loginBtn">
-                            <span class="btn-text"><i class="fas fa-shield-alt"></i> Sign In Securely</span>
-                            <span class="btn-spinner" id="loginSpinner" style="display:none;">
-                                <i class="fas fa-spinner fa-spin"></i> Authenticating…
-                            </span>
-                        </button>
-
+                        <button type="submit" class="btn btn-primary btn-block" id="loginBtn">Sign In</button>
                     </form>
-
-                    <!-- Quick test credentials -->
-                    <details style="margin-top:1.5rem;border:1px solid #e2e8f0;border-radius:8px;padding:0.75rem 1rem;">
-                        <summary style="cursor:pointer;font-weight:600;font-size:0.88rem;color:var(--text-light);">
-                            <i class="fas fa-info-circle"></i> Test Credentials (dev only)
-                        </summary>
-                        <div style="margin-top:0.75rem;display:flex;flex-direction:column;gap:0.4rem;font-size:0.85rem;">
-                            <div style="display:flex;align-items:center;gap:0.5rem;">
-                                <span class="role-chip citizen">citizen</span>
-                                <code>citizen</code> / <code>admin</code>
-                                <button onclick="fillCreds('citizen','admin')" style="margin-left:auto;background:none;border:1px solid #cbd5e1;border-radius:4px;padding:0.15rem 0.5rem;cursor:pointer;font-size:0.75rem;color:var(--text-light);">Use</button>
-                            </div>
-                            <div style="display:flex;align-items:center;gap:0.5rem;">
-                                <span class="role-chip supervisor">supervisor</span>
-                                <code>supervisor</code> / <code>admin</code>
-                                <button onclick="fillCreds('supervisor','admin')" style="margin-left:auto;background:none;border:1px solid #cbd5e1;border-radius:4px;padding:0.15rem 0.5rem;cursor:pointer;font-size:0.75rem;color:var(--text-light);">Use</button>
-                            </div>
-                            <div style="display:flex;align-items:center;gap:0.5rem;">
-                                <span class="role-chip admin">admin</span>
-                                <code>admin</code> / <code>admin</code>
-                                <button onclick="fillCreds('admin','admin')" style="margin-left:auto;background:none;border:1px solid #cbd5e1;border-radius:4px;padding:0.15rem 0.5rem;cursor:pointer;font-size:0.75rem;color:var(--text-light);">Use</button>
-                            </div>
-                        </div>
-                    </details>
-
-                    <div style="margin-top:1.5rem;text-align:center;border-top:1px solid #e2e8f0;padding-top:1.25rem;">
-                        <p style="color:var(--text-light);font-size:0.9rem;">No account yet? <a href="register.html" style="color:var(--primary-color);font-weight:600;">Register Now</a></p>
-                    </div>
-
                 </div>
-            </div>
-
-            <div class="text-center fade-up delay-2" style="max-width:580px;margin:1.5rem auto 0;display:flex;align-items:center;justify-content:center;gap:1rem;color:var(--text-light);font-size:0.85rem;">
-                <i class="fas fa-lock" style="font-size:1.5rem;color:var(--primary-color);"></i>
-                <p>Authenticated via Keycloak OpenID Connect. Your session token is stored locally and expires automatically.</p>
             </div>
         </div>
     </section>
-
-    <!-- Footer -->
-    <footer class="footer" style="padding-top:2rem;">
-        <div class="container">
-            <div class="footer-bottom" style="border-top:none;">
-                <p>&copy; 2026 E-Government Digital Portal. All rights reserved.</p>
-            </div>
-        </div>
-    </footer>
 </div>
+<script>
+document.getElementById('loginForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const alertBox = document.getElementById('alertBox');
+    const btn = document.getElementById('loginBtn');
+    
+    const data = {
+        username: document.getElementById('username').value,
+        password: document.getElementById('password').value
+    };
 
-<script src="../js/script.js"></script>
-<script src="../js/login.js"></script>
+    btn.disabled = true;
+    btn.innerText = 'Signing in...';
+
+    try {
+        const res = await fetch('http://localhost:3000/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+
+        if (res.ok) {
+            const data = await res.json();
+            localStorage.setItem('access_token', data.access_token);
+            window.location.href = 'id-renewal.html';
+        } else {
+            alertBox.innerText = 'Invalid username or password';
+            alertBox.className = 'alert-box error';
+            alertBox.style.display = 'flex';
+        }
+    } catch (err) {
+        alertBox.innerText = 'Cannot connect to server. Check if NestJS is running.';
+        alertBox.className = 'alert-box error';
+        alertBox.style.display = 'flex';
+    } finally {
+        btn.disabled = false;
+        btn.innerText = 'Sign In';
+    }
+});
+</script>
 </body>
 </html>

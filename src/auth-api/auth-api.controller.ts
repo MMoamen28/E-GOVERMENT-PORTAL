@@ -6,7 +6,7 @@ import {
   UseGuards,
   Request,
 } from '@nestjs/common';
-import { AuthApiService, KeycloakTokenResponse } from './auth-api.service';
+import { AuthApiService } from './auth-api.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
@@ -23,13 +23,13 @@ export class AuthApiController {
 
   @Post('login')
   @ApiOperation({ summary: 'Login and get token' })
-  login(@Body() loginDto: LoginDto): Promise<KeycloakTokenResponse> {
+  login(@Body() loginDto: LoginDto) {
     return this.authApiService.login(loginDto);
   }
 
   @Post('register')
   @ApiOperation({ summary: 'Register a new citizen' })
-  register(@Body() registerDto: RegisterDto): Promise<{ message: string }> {
+  register(@Body() registerDto: RegisterDto) {
     return this.authApiService.register(registerDto);
   }
 
@@ -37,7 +37,7 @@ export class AuthApiController {
   @UseGuards(RolesGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get current user info from token' })
-  getProfile(@Request() req: RequestWithUser): Record<string, unknown> {
+  getProfile(@Request() req: RequestWithUser) {
     return req.user;
   }
 }
