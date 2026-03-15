@@ -1,9 +1,25 @@
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { join } from 'path';
+import express from 'express';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  // Serve frontend static files first for paths that are not API/docs, so /pages/scholarship.html loads
+  const frontendPath = join(__dirname, '..', 'frontend');
+  const staticMiddleware = express.static(frontendPath);
+  app.use((req, res, next) => {
+    if (
+      req.path.startsWith('/scholarship') ||
+      req.path.startsWith('/docs') ||
+      req.path.startsWith('/api')
+    ) {
+      return next();
+    }
+    staticMiddleware(req, res, next);
+  });
 
   const config = new DocumentBuilder()
     .setTitle('E-Government Portal API')

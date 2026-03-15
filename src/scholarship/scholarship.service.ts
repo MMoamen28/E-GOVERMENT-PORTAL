@@ -1,7 +1,13 @@
-import { Injectable } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ScholarshipApplication, ApplicationStatus } from './scholarship.entity';
+import { getNextStatusFromRule } from './application-status.rules';
+import { StatusAction } from './dto/update-status.dto';
 
 export interface SubmitApplicationDto {
   applicantId: string;
@@ -62,6 +68,32 @@ export class ScholarshipService {
 
   async findOne(id: string): Promise<ScholarshipApplication | null> {
     return this.applicationRepo.findOne({ where: { id } });
+  }
+
+  /**
+   * Update application status via action (start_review, approve, reject).
+   * Transition is validated against rules/application_status (appstatus ruleset).
+   * Only officer/admin should call this (enforced by controller @Roles).
+   */
+  async updateStatus(
+    id: string,
+    action: StatusAction,
+  ): Promise<ScholarshipApplication> {
+    const application = await this.applicationRepo.findOne({ where: { id } });
+    if (!application) {
+      throw new NotFoundException(`Application ${id} not found`);
+    }
+
+    const nextStatus = getNextStatusFromRule(application.status, action);
+    if (nextStatus == null) {
+      throw new BadRequestException(
+        `Invalid status transition: cannot perform '${action}' from '${application.status}'. ` +
+          'Allowed: SUBMITTED→start_review→UNDER_REVIEW; UNDER_REVIEW→approve→APPROVED or reject→REJECTED.',
+      );
+    }
+
+    application.status = nextStatus;
+    return this.applicationRepo.save(application);
   }
 
   /** Placeholder: replace with actual GoRules HTTP/SDK call for levels */

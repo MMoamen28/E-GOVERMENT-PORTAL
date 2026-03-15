@@ -4,7 +4,7 @@
   "displayName": "E-Government Portal",
   "enabled": true,
   "sslRequired": "none",
-  "registrationAllowed": false,
+  "registrationAllowed": true,
   "loginWithEmailAllowed": true,
   "duplicateEmailsAllowed": false,
   "resetPasswordAllowed": true,
@@ -110,5 +110,37 @@
   "directGrantFlow": "direct grant",
   "resetCredentialsFlow": "reset credentials",
   "clientAuthenticationFlow": "clients",
-  "dockerAuthenticationFlow": "docker auth"
+  "dockerAuthenticationFlow": "docker auth",
+  "users": [
+    {
+      "username": "applicant1",
+      "email": "applicant1@example.com",
+      "firstName": "Test",
+      "lastName": "Applicant",
+      "enabled": true,
+      "emailVerified": true,
+      "realmRoles": ["applicant", "default-roles-e-gov-portal"],
+      "credentials": [{ "type": "password", "value": "test123", "temporary": false }]
+    },
+    {
+      "username": "officer1",
+      "email": "officer1@example.com",
+      "firstName": "Test",
+      "lastName": "Officer",
+      "enabled": true,
+      "emailVerified": true,
+      "realmRoles": ["officer", "default-roles-e-gov-portal"],
+      "credentials": [{ "type": "password", "value": "test123", "temporary": false }]
+    },
+    {
+      "username": "admin",
+      "email": "admin@example.com",
+      "firstName": "Admin",
+      "lastName": "User",
+      "enabled": true,
+      "emailVerified": true,
+      "realmRoles": ["admin", "default-roles-e-gov-portal"],
+      "credentials": [{ "type": "password", "value": "admin123", "temporary": false }]
+    }
+  ]
 }

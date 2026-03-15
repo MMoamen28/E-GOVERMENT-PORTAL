@@ -10,8 +10,8 @@ The files in this folder are **GoRules rulesets**. **GoRules are set in the sub-
 | `priority_rules`           | prioritycheck  | Priority service          |
 | `scholarship`              | levels         | Levels service            |
 | `eligibility_policy`       | policies       | Policies service          |
+| `application_status`      | appstatus      | Application Status (status tracking) |
 
-*(Add `appstatus` when that service branch exists.)*
 
 ## Workflow
 
