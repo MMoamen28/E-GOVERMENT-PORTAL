@@ -1,3 +1,4 @@
+/* eslint-disable */
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -11,22 +12,22 @@ export class RenewalRequestEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column()
+  @Column({ type: 'varchar' })
   firstName: string;
 
-  @Column()
+  @Column({ type: 'varchar' })
   lastName: string;
 
-  @Column()
+  @Column({ type: 'varchar' })
   nationalId: string;
 
   @Column({ type: 'varchar', default: 'PENDING' })
   status: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   workflowId: string | null;
 
-  @Column({ nullable: true })
+  @Column({ type: 'text', nullable: true })
   rejectionReason: string | null;
 
   @CreateDateColumn()

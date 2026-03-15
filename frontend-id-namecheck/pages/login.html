@@ -56,6 +56,19 @@
     </section>
 </div>
 <script>
+function parseJwt(token) {
+    try {
+        const base64Url = token.split('.')[1];
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        }).join(''));
+        return JSON.parse(jsonPayload);
+    } catch (e) {
+        return null;
+    }
+}
+
 document.getElementById('loginForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const alertBox = document.getElementById('alertBox');
@@ -79,6 +92,17 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
         if (res.ok) {
             const data = await res.json();
             localStorage.setItem('access_token', data.access_token);
+            
+            // Decode role
+            const decoded = parseJwt(data.access_token);
+            if (decoded && decoded.realm_access && decoded.realm_access.roles) {
+                const roles = decoded.realm_access.roles;
+                let role = 'citizen';
+                if (roles.includes('admin')) role = 'admin';
+                else if (roles.includes('supervisor')) role = 'supervisor';
+                localStorage.setItem('user_role', role);
+            }
+            
             window.location.href = 'id-renewal.html';
         } else {
             alertBox.innerText = 'Invalid username or password';

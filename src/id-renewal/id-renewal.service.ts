@@ -50,7 +50,7 @@ export class IdRenewalService {
         saved.lastName,
         saved.nationalId,
       );
-      saved.workflowId = process.processInstanceId ?? process.id;
+      saved.workflowId = process.processInstanceId;
       await this.renewalRepository.save(saved);
     } catch {
       saved.workflowId = 'workflow-unavailable';
