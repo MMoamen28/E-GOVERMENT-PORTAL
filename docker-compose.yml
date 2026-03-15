@@ -1,6 +1,38 @@
 services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: egov-postgres
+    environment:
+      POSTGRES_USER: egov_user
+      POSTGRES_PASSWORD: egov_password
+      POSTGRES_DB: egov_db
+    ports:
+      - "5432:5432"
+    networks:
+      - egov-network
+
+  flowable:
+    image: flowable/flowable-ui:6.8.0
+    container_name: egov-flowable
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/egov_db
+      - SPRING_DATASOURCE_USERNAME=egov_user
+      - SPRING_DATASOURCE_PASSWORD=egov_password
+    ports:
+      - "8081:8080"
+    depends_on:
+      - postgres
+    networks:
+      - egov-network
+
   gorules:
     image: gorules/editor:latest
     container_name: egov-gorules
     ports:
       - "8082:3000"
+    networks:
+      - egov-network
+
+networks:
+  egov-network:
+    driver: bridge
