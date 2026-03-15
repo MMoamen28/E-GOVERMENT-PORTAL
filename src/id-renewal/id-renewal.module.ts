@@ -9,4 +9,4 @@ import { FlowableModule } from '../flowable/flowable.module';
   controllers: [IdRenewalController],
   providers: [IdRenewalService],
 })
-export class IdRenewalModule {}
+export class IdRenewalModule { }
