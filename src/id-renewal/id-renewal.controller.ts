@@ -69,7 +69,7 @@ export class IdRenewalController {
     @Param('taskId') taskId: string,
     @Body() dto: CompleteTaskDto,
   ) {
-    return this.idRenewalService.completeTask(taskId, dto.approved);
+    return this.idRenewalService.completeTask(taskId, dto);
   }
 
   @Get()

@@ -1,27 +1,23 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+
 import {
   Injectable,
   NotFoundException,
   UnprocessableEntityException,
 } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { GoRulesService } from '../gorules/gorules.service';
 import { FlowableService, FlowableTask } from '../flowable/flowable.service';
 import { CreateRenewalDto } from './dto/create-renewal.dto';
-
-export interface RenewalRequest {
-  id: string;
-  firstName: string;
-  lastName: string;
-  nationalId: string;
-  status: 'PENDING' | 'APPROVED' | 'REJECTED';
-  workflowId?: string;
-  submittedAt: string;
-}
+import { CompleteTaskDto } from './dto/complete-task.dto';
+import { RenewalRequestEntity } from './renewal-request.entity';
 
 @Injectable()
 export class IdRenewalService {
-  private requests: RenewalRequest[] = [];
-
   constructor(
+    @InjectRepository(RenewalRequestEntity)
+    private readonly renewalRepository: Repository<RenewalRequestEntity>,
     private readonly goRulesService: GoRulesService,
     private readonly flowableService: FlowableService,
   ) {}
@@ -30,7 +26,7 @@ export class IdRenewalService {
     await this.flowableService.deployProcess();
   }
 
-  async submitRequest(dto: CreateRenewalDto): Promise<RenewalRequest> {
+  async submitRequest(dto: CreateRenewalDto): Promise<RenewalRequestEntity> {
     const validation = await this.goRulesService.validateName(
       dto.firstName,
       dto.lastName,
@@ -40,37 +36,38 @@ export class IdRenewalService {
       throw new UnprocessableEntityException(validation.reason);
     }
 
-    const request: RenewalRequest = {
-      id: Math.random().toString(36).substring(2, 9),
+    const request = this.renewalRepository.create({
       firstName: dto.firstName,
       lastName: dto.lastName,
       nationalId: dto.nationalId,
       status: 'PENDING',
-      submittedAt: new Date().toISOString(),
-    };
+    });
+
+    const saved = await this.renewalRepository.save(request);
 
     try {
       const process = await this.flowableService.startRenewalProcess(
-        request.id,
-        request.firstName,
-        request.lastName,
-        request.nationalId,
+        saved.id,
+        saved.firstName,
+        saved.lastName,
+        saved.nationalId,
       );
-      request.workflowId = process.processInstanceId;
+      saved.workflowId = process.processInstanceId;
+      await this.renewalRepository.save(saved);
     } catch {
-      request.workflowId = 'workflow-unavailable';
+      saved.workflowId = 'workflow-unavailable';
+      await this.renewalRepository.save(saved);
     }
 
-    this.requests.push(request);
-    return request;
+    return saved;
   }
 
-  findAll(): RenewalRequest[] {
-    return this.requests;
+  async findAll(): Promise<RenewalRequestEntity[]> {
+    return this.renewalRepository.find();
   }
 
-  findOne(id: string): RenewalRequest {
-    const request = this.requests.find((r) => r.id === id);
+  async findOne(id: string): Promise<RenewalRequestEntity> {
+    const request = await this.renewalRepository.findOne({ where: { id } });
     if (!request) {
       throw new NotFoundException(`Renewal request '${id}' not found`);
     }
@@ -83,24 +80,24 @@ export class IdRenewalService {
 
   async completeTask(
     taskId: string,
-    approved: boolean,
-  ): Promise<RenewalRequest> {
-    // Resolve which local request this task belongs to via processInstanceId
+    dto: CompleteTaskDto,
+  ): Promise<RenewalRequestEntity> {
     const task = await this.flowableService.getTaskById(taskId);
 
-    const request = this.requests.find(
-      (r) => r.workflowId === task.processInstanceId,
-    );
+    const request = await this.renewalRepository.findOne({
+      where: { workflowId: task.processInstanceId },
+    });
+
     if (!request) {
       throw new NotFoundException(
         'No renewal request found for this workflow task',
       );
     }
 
-    // Drive the BPMN gateway: approved variable routes to approve/reject path
-    await this.flowableService.completeTask(taskId, approved);
+    await this.flowableService.completeTask(taskId, dto.approved);
 
-    request.status = approved ? 'APPROVED' : 'REJECTED';
-    return request;
+    request.status = dto.approved ? 'APPROVED' : 'REJECTED';
+    request.rejectionReason = dto.reason ?? null;
+    return this.renewalRepository.save(request);
   }
 }
