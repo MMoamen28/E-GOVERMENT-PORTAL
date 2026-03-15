@@ -93,6 +93,13 @@ document.addEventListener('DOMContentLoaded', function () {
     const gpa = parseFloat(document.getElementById('apply-gpa').value);
     const income = parseFloat(document.getElementById('apply-income').value);
     const achievements = document.getElementById('apply-achievements').checked;
+    const isOrphan = document.getElementById('apply-orphan').checked;
+    const isStudent = document.getElementById('apply-student').checked;
+    const hasID = document.getElementById('apply-hasID').checked;
+    const hasIncomeDoc = document.getElementById('apply-hasIncomeDoc').checked;
+    const hasStudentCert = document.getElementById('apply-hasStudentCert').checked;
+    const hasFamilyStatus = document.getElementById('apply-hasFamilyStatus').checked;
+
     const successEl = document.getElementById('apply-success');
     const errorEl = document.getElementById('apply-error');
     successEl.style.display = 'none';
@@ -104,7 +111,18 @@ document.addEventListener('DOMContentLoaded', function () {
     try {
       const res = await window.EgovAuth.apiFetch('/scholarship/apply', {
         method: 'POST',
-        body: JSON.stringify({ applicantId, gpa, income, achievements }),
+        body: JSON.stringify({ 
+          applicantId, 
+          gpa, 
+          income, 
+          achievements,
+          isOrphan,
+          isStudent,
+          hasID,
+          hasIncomeDoc,
+          hasStudentCert,
+          hasFamilyStatus
+        }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
@@ -172,7 +190,9 @@ document.addEventListener('DOMContentLoaded', function () {
           '<td>' + (app.gpa != null ? app.gpa : '—') + '</td>' +
           '<td>' + (app.income != null ? app.income : '—') + '</td>' +
           '<td>' + (app.scholarshipLevel || '—') + '</td>' +
+          '<td>' + (app.priorityScore != null ? app.priorityScore : '—') + '</td>' +
           '<td><span class="status-badge ' + statusClass(app.status) + '">' + (app.status || 'DRAFT') + '</span></td>' +
+          '<td>' + (app.reason || '—') + '</td>' +
           (isOfficerNow ? '<td class="scholarship-actions" data-app-id="' + app.id + '" data-status="' + (app.status || '') + '"></td>' : '');
         tbody.appendChild(tr);
         if (isOfficerNow) {

@@ -8,12 +8,21 @@ import { Repository } from 'typeorm';
 import { ScholarshipApplication, ApplicationStatus } from './scholarship.entity';
 import { getNextStatusFromRule } from './application-status.rules';
 import { StatusAction } from './dto/update-status.dto';
+import { ZenEngine } from '@gorules/zen-engine';
+import * as fs from 'fs/promises';
+import * as path from 'path';
 
 export interface SubmitApplicationDto {
   applicantId: string;
   gpa: number;
   income: number;
   achievements: boolean;
+  isOrphan: boolean;
+  isStudent: boolean;
+  hasID: boolean;
+  hasIncomeDoc: boolean;
+  hasStudentCert: boolean;
+  hasFamilyStatus: boolean;
 }
 
 @Injectable()
@@ -25,95 +34,125 @@ export class ScholarshipService {
 
   /**
    * Submit a scholarship application.
-   * 1. Validate input
-   * 2. Call GoRules (levels, priority, docvalidation, policies)
-   * 3. Save to PostgreSQL
-   * 4. Trigger Flowable workflow (when integrated)
+   * Runs prioritized rules: Eligibility -> Doc Validation -> Priority -> Levels
    */
   async submitApplication(dto: SubmitApplicationDto): Promise<ScholarshipApplication> {
-    // TODO: Call GoRules API for levels rule (gorules/levels)
-    const scholarshipLevel = await this.evaluateLevelsRule(dto);
+    // 1. Calculate Priority Score
+    const priorityScore = await this.evaluatePriority(dto);
 
-    // TODO: Call GoRules API for priority rule (gorules/prioritycheck)
-    const priorityScore = await this.evaluatePriorityRule(dto);
+    // 2. Determine Scholarship Level
+    const scholarshipLevel = await this.evaluateLevels(dto);
 
-    // TODO: Call GoRules API for document validation (gorules/docvalidation)
-    const documentsValid = await this.evaluateDocValidationRule(dto);
+    // 3. Validate Documents
+    const docStatus = await this.evaluateDocValidation(dto);
 
-    const application = this.applicationRepo.create({
-      applicantId: dto.applicantId,
-      gpa: dto.gpa,
-      income: dto.income,
-      achievements: dto.achievements,
-      scholarshipLevel,
-      priorityScore,
-      documentsValid,
+    // 4. Check Eligibility
+    const eligibility = await this.evaluateEligibility(dto);
+    
+    if (!eligibility.eligible) {
+      return this.saveApplication(dto, {
+        status: ApplicationStatus.REJECTED,
+        reason: eligibility.reason || 'Ineligible based on policy',
+        priorityScore,
+        scholarshipLevel,
+      });
+    }
+
+    return this.saveApplication(dto, {
       status: ApplicationStatus.SUBMITTED,
-      // processInstanceId: set when Flowable workflow is started
+      documentsValid: docStatus.valid,
+      reason: (docStatus.reason === '-' || !docStatus.reason) ? null : docStatus.reason,
+      priorityScore,
+      scholarshipLevel,
     });
+  }
 
-    const saved = await this.applicationRepo.save(application);
+  private async saveApplication(dto: SubmitApplicationDto, extras: Partial<ScholarshipApplication>) {
+    const application = this.applicationRepo.create({
+      ...dto,
+      ...extras,
+    });
+    return this.applicationRepo.save(application);
+  }
 
-    // TODO: Start Flowable process (e.g. scholarship workflow) and set processInstanceId
-    // await this.flowableService.startProcess('scholarship', { applicationId: saved.id });
+  private async evaluateRuleset(rulesetName: string, input: any): Promise<any> {
+    try {
+      const engine = new ZenEngine();
+      const rulesPath = path.join(process.cwd(), 'rules', rulesetName);
+      const ruleContent = await fs.readFile(rulesPath);
+      const decision = engine.createDecision(ruleContent);
+      console.log(`Evaluating ruleset: ${rulesetName} with input:`, JSON.stringify(input));
+      const { result } = await decision.evaluate(input);
+      console.log(`Ruleset: ${rulesetName} result:`, JSON.stringify(result));
+      return result;
+    } catch (e) {
+      console.error(`Failed to evaluate ruleset ${rulesetName}:`, e);
+      return null;
+    }
+  }
 
-    return saved;
+  private async evaluateEligibility(dto: SubmitApplicationDto) {
+    // Note: 'applicationsThisYear' is hardcoded for now, would normally be a query
+    const res = await this.evaluateRuleset('eligibility_policy', {
+      isStudent: dto.isStudent,
+      applicationsThisYear: 0,
+      applicationDate: new Date().toISOString().split('T')[0],
+    });
+    return {
+      eligible: res?.eligible === true || res?.eligible === 'true',
+      reason: res?.reason,
+    };
+  }
+
+  private async evaluateDocValidation(dto: SubmitApplicationDto) {
+    const res = await this.evaluateRuleset('document_validation', {
+      hasID: dto.hasID,
+      IDValid: dto.hasID, // Assume ID is valid if provided for now
+      hasIncomeDoc: dto.hasIncomeDoc,
+      hasStudentCert: dto.hasStudentCert,
+      hasFamilyStatus: dto.hasFamilyStatus,
+    });
+    return {
+      valid: res?.documentsValid === true || res?.documentsValid === 'true',
+      reason: res?.reason,
+    };
+  }
+
+  private async evaluatePriority(dto: SubmitApplicationDto) {
+    const res = await this.evaluateRuleset('priority_rules', {
+      income: dto.income,
+      orphan: dto.isOrphan,
+      GPA: dto.gpa,
+      applicationDate: new Date().toISOString().split('T')[0],
+    });
+    return parseInt(res?.priorityScore || '0', 10);
+  }
+
+  private async evaluateLevels(dto: SubmitApplicationDto) {
+    const res = await this.evaluateRuleset('scholarship', {
+      GPA: dto.gpa,
+      Income: dto.income,
+      Achievements: dto.achievements,
+    });
+    return res?.ScholarshipLevel || 'NONE';
   }
 
   async findAll(): Promise<ScholarshipApplication[]> {
-    return this.applicationRepo.find({
-      order: { createdAt: 'DESC' },
-    });
+    return this.applicationRepo.find({ order: { createdAt: 'DESC' } });
   }
 
   async findOne(id: string): Promise<ScholarshipApplication | null> {
     return this.applicationRepo.findOne({ where: { id } });
   }
 
-  /**
-   * Update application status via action (start_review, approve, reject).
-   * Transition is validated against rules/application_status (appstatus ruleset).
-   * Only officer/admin should call this (enforced by controller @Roles).
-   */
-  async updateStatus(
-    id: string,
-    action: StatusAction,
-  ): Promise<ScholarshipApplication> {
+  async updateStatus(id: string, action: StatusAction): Promise<ScholarshipApplication> {
     const application = await this.applicationRepo.findOne({ where: { id } });
-    if (!application) {
-      throw new NotFoundException(`Application ${id} not found`);
-    }
-
+    if (!application) throw new NotFoundException(`Application ${id} not found`);
     const nextStatus = getNextStatusFromRule(application.status, action);
     if (nextStatus == null) {
-      throw new BadRequestException(
-        `Invalid status transition: cannot perform '${action}' from '${application.status}'. ` +
-          'Allowed: SUBMITTED→start_review→UNDER_REVIEW; UNDER_REVIEW→approve→APPROVED or reject→REJECTED.',
-      );
+      throw new BadRequestException(`Invalid status transition: ${action} from ${application.status}`);
     }
-
     application.status = nextStatus;
     return this.applicationRepo.save(application);
-  }
-
-  /** Placeholder: replace with actual GoRules HTTP/SDK call for levels */
-  private async evaluateLevelsRule(dto: SubmitApplicationDto): Promise<string> {
-    // Example logic; replace with GoRules API call
-    if (dto.gpa >= 3.8 && dto.income <= 2000) return 'LEVEL_3';
-    if (dto.gpa >= 3.5 && dto.income <= 4000) return 'LEVEL_2';
-    if (dto.gpa >= 3.0 && dto.income <= 6000) return 'LEVEL_1';
-    return 'NONE';
-  }
-
-  /** Placeholder: replace with actual GoRules API call for priority */
-  private async evaluatePriorityRule(dto: SubmitApplicationDto): Promise<number> {
-    // Example; replace with GoRules
-    return Math.min(100, Math.round(dto.gpa * 20) + (dto.achievements ? 10 : 0));
-  }
-
-  /** Placeholder: replace with actual GoRules API call for document validation */
-  private async evaluateDocValidationRule(dto: SubmitApplicationDto): Promise<boolean> {
-    // Example; replace with GoRules
-    return true;
   }
 }

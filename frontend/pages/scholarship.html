@@ -75,12 +75,34 @@
                                 <span class="error-message"></span>
                             </div>
                         </div>
-                        <div class="input-group">
-                            <label class="form-label">
-                                <input type="checkbox" id="apply-achievements"> Has achievements (honors, etc.)
-                            </label>
+                        <div class="form-row">
+                            <div class="input-group">
+                                <label class="form-label">
+                                    <input type="checkbox" id="apply-achievements"> Has achievements
+                                </label>
+                            </div>
+                            <div class="input-group">
+                                <label class="form-label">
+                                    <input type="checkbox" id="apply-orphan"> Is Orphan
+                                </label>
+                            </div>
+                            <div class="input-group">
+                                <label class="form-label">
+                                    <input type="checkbox" id="apply-student" checked> Is Student
+                                </label>
+                            </div>
                         </div>
-                        <button type="submit" class="btn btn-primary">Submit application</button>
+
+                        <div class="input-group" style="margin-top: 1rem;">
+                            <label class="form-label">Documents Provided:</label>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; font-size: 0.9rem;">
+                                <label><input type="checkbox" id="apply-hasID"> National ID</label>
+                                <label><input type="checkbox" id="apply-hasIncomeDoc"> Income Record</label>
+                                <label><input type="checkbox" id="apply-hasStudentCert"> Student Certificate</label>
+                                <label><input type="checkbox" id="apply-hasFamilyStatus"> Family Status</label>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary" style="margin-top: 1.5rem;">Submit application</button>
                     </form>
                     <div id="apply-success" class="alert alert-success" style="display: none;"></div>
                     <div id="apply-error" class="alert alert-error" style="display: none;"></div>
@@ -99,7 +121,9 @@
                                     <th>GPA</th>
                                     <th>Income</th>
                                     <th>Level</th>
+                                    <th>Priority</th>
                                     <th>Status</th>
+                                    <th>Reason</th>
                                     <th id="th-actions" style="display: none;">Actions</th>
                                 </tr>
                             </thead>
