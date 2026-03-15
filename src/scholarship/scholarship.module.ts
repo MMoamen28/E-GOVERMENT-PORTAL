@@ -5,9 +5,7 @@ import { ScholarshipService } from './scholarship.service';
 import { ScholarshipController } from './scholarship.controller';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([ScholarshipApplication]),
-  ],
+  imports: [TypeOrmModule.forFeature([ScholarshipApplication])],
   controllers: [ScholarshipController],
   providers: [ScholarshipService],
   exports: [ScholarshipService],

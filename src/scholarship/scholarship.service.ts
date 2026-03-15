@@ -1,7 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { ScholarshipApplication, ApplicationStatus } from './scholarship.entity';
+import {
+  ScholarshipApplication,
+  ApplicationStatus,
+} from './scholarship.entity';
 
 export interface SubmitApplicationDto {
   applicantId: string;
@@ -24,7 +27,9 @@ export class ScholarshipService {
    * 3. Save to PostgreSQL
    * 4. Trigger Flowable workflow (when integrated)
    */
-  async submitApplication(dto: SubmitApplicationDto): Promise<ScholarshipApplication> {
+  async submitApplication(
+    dto: SubmitApplicationDto,
+  ): Promise<ScholarshipApplication> {
     // TODO: Call GoRules API for levels rule (gorules/levels)
     const scholarshipLevel = await this.evaluateLevelsRule(dto);
 
@@ -74,13 +79,20 @@ export class ScholarshipService {
   }
 
   /** Placeholder: replace with actual GoRules API call for priority */
-  private async evaluatePriorityRule(dto: SubmitApplicationDto): Promise<number> {
+  private async evaluatePriorityRule(
+    dto: SubmitApplicationDto,
+  ): Promise<number> {
     // Example; replace with GoRules
-    return Math.min(100, Math.round(dto.gpa * 20) + (dto.achievements ? 10 : 0));
+    return Math.min(
+      100,
+      Math.round(dto.gpa * 20) + (dto.achievements ? 10 : 0),
+    );
   }
 
   /** Placeholder: replace with actual GoRules API call for document validation */
-  private async evaluateDocValidationRule(dto: SubmitApplicationDto): Promise<boolean> {
+  private async evaluateDocValidationRule(
+    dto: SubmitApplicationDto,
+  ): Promise<boolean> {
     // Example; replace with GoRules
     return true;
   }
