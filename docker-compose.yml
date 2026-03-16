@@ -25,5 +25,25 @@ services:
     volumes:
       - ./keycloak:/opt/keycloak/data/import
 
+  app:
+    build: .
+    container_name: e_gov_app
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      PORT: 3000
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      DATABASE_USER: egov_user
+      DATABASE_PASSWORD: egov_pass
+      DATABASE_NAME: e_gov_portal
+      KEYCLOAK_ISSUER: http://localhost:8080/realms/e-gov-portal
+      KEYCLOAK_INTERNAL_URL: http://keycloak:8080/realms/e-gov-portal
+      KEYCLOAK_JWKS_URI: http://keycloak:8080/realms/e-gov-portal/protocol/openid-connect/certs
+    depends_on:
+      - postgres
+      - keycloak
+
 volumes:
   pgdata:

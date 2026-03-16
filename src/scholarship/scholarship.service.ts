@@ -1,36 +1,51 @@
-import { Injectable } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import {
   ScholarshipApplication,
   ApplicationStatus,
 } from './scholarship.entity';
+import { getNextStatusFromRule } from './application-status.rules';
+import { StatusAction } from './dto/update-status.dto';
 
-export interface SubmitApplicationDto {
-  applicantId: string;
-  gpa: number;
-  income: number;
-  achievements: boolean;
-}
+import { SubmitApplicationDto } from './dto/submit-application.dto';
+
+import { PoliciesService } from '../policies/policies.service';
 
 @Injectable()
 export class ScholarshipService {
   constructor(
     @InjectRepository(ScholarshipApplication)
     private readonly applicationRepo: Repository<ScholarshipApplication>,
+    private readonly policiesService: PoliciesService,
   ) {}
 
   /**
    * Submit a scholarship application.
-   * 1. Validate input
-   * 2. Call GoRules (levels, priority, docvalidation, policies)
+   * 1. Validate policies (GoRules + DB check)
+   * 2. Call GoRules (levels, priority, docvalidation)
    * 3. Save to PostgreSQL
-   * 4. Trigger Flowable workflow (when integrated)
    */
   async submitApplication(
     dto: SubmitApplicationDto,
   ): Promise<ScholarshipApplication> {
-    // TODO: Call GoRules API for levels rule (gorules/levels)
+    // 1. Enforce Policies (Seasonal window, student status, 1 per year)
+    // For this demonstration, we assume information is available. In a real app,
+    // isStudent would come from a verified profile or document check.
+    const policyResult = await this.policiesService.evaluatePolicy({
+      applicantId: dto.applicantId,
+      isStudent: dto.isStudent,
+    });
+
+    if (!policyResult.eligible) {
+      throw new BadRequestException(`Policy rejection: ${policyResult.reason}`);
+    }
+
+    // 2. Call GoRules API for levels rule (gorules/levels)
     const scholarshipLevel = await this.evaluateLevelsRule(dto);
 
     // TODO: Call GoRules API for priority rule (gorules/prioritycheck)
@@ -69,6 +84,32 @@ export class ScholarshipService {
     return this.applicationRepo.findOne({ where: { id } });
   }
 
+  /**
+   * Update application status via action (start_review, approve, reject).
+   * Transition is validated against rules/application_status (appstatus ruleset).
+   * Only officer/admin should call this (enforced by controller @Roles).
+   */
+  async updateStatus(
+    id: string,
+    action: StatusAction,
+  ): Promise<ScholarshipApplication> {
+    const application = await this.applicationRepo.findOne({ where: { id } });
+    if (!application) {
+      throw new NotFoundException(`Application ${id} not found`);
+    }
+
+    const nextStatus = getNextStatusFromRule(application.status, action);
+    if (nextStatus == null) {
+      throw new BadRequestException(
+        `Invalid status transition: cannot perform '${action}' from '${application.status}'. ` +
+          'Allowed: SUBMITTED→start_review→UNDER_REVIEW; UNDER_REVIEW→approve→APPROVED or reject→REJECTED.',
+      );
+    }
+
+    application.status = nextStatus;
+    return this.applicationRepo.save(application);
+  }
+
   /** Placeholder: replace with actual GoRules HTTP/SDK call for levels */
   private async evaluateLevelsRule(dto: SubmitApplicationDto): Promise<string> {
     // Example logic; replace with GoRules API call
@@ -80,18 +121,18 @@ export class ScholarshipService {
 
   /** Placeholder: replace with actual GoRules API call for priority */
   private async evaluatePriorityRule(
-    dto: SubmitApplicationDto,
+    _dto: SubmitApplicationDto,
   ): Promise<number> {
     // Example; replace with GoRules
     return Math.min(
       100,
-      Math.round(dto.gpa * 20) + (dto.achievements ? 10 : 0),
+      Math.round(_dto.gpa * 20) + (_dto.achievements ? 10 : 0),
     );
   }
 
   /** Placeholder: replace with actual GoRules API call for document validation */
   private async evaluateDocValidationRule(
-    dto: SubmitApplicationDto,
+    _dto: SubmitApplicationDto,
   ): Promise<boolean> {
     // Example; replace with GoRules
     return true;

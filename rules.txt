@@ -1,0 +1,40 @@
+1. Implementing the 3 Scholarship Levels. 
+ 	Set conditions for each level such as:
+GPA requirement
+Financial need
+Academic achievements                 Level 1 → 20% discount              Level 3 → 60% discount         Level 5 → Full scholarship
+
+2. required documents
+ID - check if he has bad records from the last number 
+
+family Income
+
+Student certificate
+
+Family status document
+
+3.priority check system
+
+income < threshold
+
+orphan
+
+Earlier application date 
+
+Higher GPA
++ filter for specific conditions 
+
+4.application policies
+
+Must be a student
+
+max. 1 application per year
+
+a specific time for application (before university ) from July till October
+
+
+Must not already receive another scholarship
+
+5. application status tracking
+
+submitted - under review - approved - rejected
