@@ -86,6 +86,54 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 
+  // ——— Check Eligibility ———
+  const checkBtn = document.getElementById('btn-check-eligibility');
+  const policyEl = document.getElementById('policy-result');
+
+  if (checkBtn) {
+    checkBtn.addEventListener('click', async function() {
+      const applicantId = document.getElementById('apply-applicantId').value;
+      const isStudent = document.getElementById('apply-isStudent').checked;
+      
+      policyEl.style.display = 'none';
+      policyEl.classList.remove('active');
+      policyEl.className = 'alert reveal';
+      
+      const origText = checkBtn.innerHTML;
+      checkBtn.disabled = true;
+      checkBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Checking…';
+
+      try {
+        const res = await window.EgovAuth.apiFetch('/policies/evaluate', {
+          method: 'POST',
+          body: JSON.stringify({ applicantId, isStudent }),
+        });
+
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(data.message || (res.status === 401 ? 'Session expired (Unauthorized)' : 'Error checking eligibility'));
+        }
+        
+        const data = await res.json();
+        console.log('Eligibility Data:', data);
+        
+        policyEl.textContent = (data.eligible ? '✅ ' : '❌ status: ') + (data.reason || 'Not eligible (no reason)');
+        policyEl.classList.add(data.eligible ? 'alert-success' : 'alert-error');
+        policyEl.style.display = 'block';
+        // Force a reflow to trigger animation
+        policyEl.offsetHeight; 
+        policyEl.classList.add('active');
+      } catch (err) {
+        policyEl.textContent = 'Error checking eligibility.';
+        policyEl.classList.add('alert-error');
+        policyEl.style.display = 'block';
+      } finally {
+        checkBtn.disabled = false;
+        checkBtn.innerHTML = origText;
+      }
+    });
+  }
+
   // ——— Apply form ———
   document.getElementById('applyForm').addEventListener('submit', async function (e) {
     e.preventDefault();
@@ -93,6 +141,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const gpa = parseFloat(document.getElementById('apply-gpa').value);
     const income = parseFloat(document.getElementById('apply-income').value);
     const achievements = document.getElementById('apply-achievements').checked;
+
     const isOrphan = document.getElementById('apply-orphan').checked;
     const isStudent = document.getElementById('apply-student').checked;
     const hasID = document.getElementById('apply-hasID').checked;
@@ -100,10 +149,15 @@ document.addEventListener('DOMContentLoaded', function () {
     const hasStudentCert = document.getElementById('apply-hasStudentCert').checked;
     const hasFamilyStatus = document.getElementById('apply-hasFamilyStatus').checked;
 
+
     const successEl = document.getElementById('apply-success');
     const errorEl = document.getElementById('apply-error');
+    const policyEl = document.getElementById('policy-result');
+
     successEl.style.display = 'none';
     errorEl.style.display = 'none';
+    policyEl.style.display = 'none';
+
     const btn = this.querySelector('button[type="submit"]');
     const origText = btn.innerHTML;
     btn.disabled = true;
@@ -111,6 +165,7 @@ document.addEventListener('DOMContentLoaded', function () {
     try {
       const res = await window.EgovAuth.apiFetch('/scholarship/apply', {
         method: 'POST',
+
         body: JSON.stringify({ 
           applicantId, 
           gpa, 
@@ -123,6 +178,7 @@ document.addEventListener('DOMContentLoaded', function () {
           hasStudentCert,
           hasFamilyStatus
         }),
+
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));

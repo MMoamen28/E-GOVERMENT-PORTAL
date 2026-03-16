@@ -30,16 +30,28 @@ export class ScholarshipController {
 
   @Post('apply')
   @ApiOperation({ summary: 'Submit a scholarship application' })
-  @ApiResponse({ status: 201, description: 'Application created successfully.' })
-  @ApiResponse({ status: 401, description: 'Unauthorized (missing or invalid JWT).' })
+  @ApiResponse({
+    status: 201,
+    description: 'Application created successfully.',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized (missing or invalid JWT).',
+  })
   async apply(@Body() dto: SubmitApplicationDto) {
     return this.scholarshipService.submitApplication(dto);
   }
 
   @Get()
   @ApiOperation({ summary: 'List all scholarship applications' })
-  @ApiResponse({ status: 200, description: 'List of scholarship applications.' })
-  @ApiResponse({ status: 401, description: 'Unauthorized (missing or invalid JWT).' })
+  @ApiResponse({
+    status: 200,
+    description: 'List of scholarship applications.',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized (missing or invalid JWT).',
+  })
   async list() {
     return this.scholarshipService.findAll();
   }
@@ -48,7 +60,10 @@ export class ScholarshipController {
   @ApiOperation({ summary: 'Get one scholarship application by ID' })
   @ApiParam({ name: 'id', description: 'Application UUID' })
   @ApiResponse({ status: 200, description: 'The scholarship application.' })
-  @ApiResponse({ status: 401, description: 'Unauthorized (missing or invalid JWT).' })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized (missing or invalid JWT).',
+  })
   @ApiResponse({ status: 404, description: 'Application not found.' })
   async getOne(@Param('id') id: string) {
     return this.scholarshipService.findOne(id);
@@ -65,8 +80,14 @@ export class ScholarshipController {
   @ApiParam({ name: 'id', description: 'Application UUID' })
   @ApiResponse({ status: 200, description: 'Application with updated status.' })
   @ApiResponse({ status: 400, description: 'Invalid status transition.' })
-  @ApiResponse({ status: 401, description: 'Unauthorized (missing or invalid JWT).' })
-  @ApiResponse({ status: 403, description: 'Forbidden (requires officer or admin role).' })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized (missing or invalid JWT).',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden (requires officer or admin role).',
+  })
   @ApiResponse({ status: 404, description: 'Application not found.' })
   async updateStatus(@Param('id') id: string, @Body() dto: UpdateStatusDto) {
     return this.scholarshipService.updateStatus(id, dto.action, dto.reason);

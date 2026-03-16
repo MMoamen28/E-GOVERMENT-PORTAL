@@ -9,7 +9,7 @@ services:
       POSTGRES_PASSWORD: egov_pass
       POSTGRES_DB: e_gov_portal
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
 
@@ -38,7 +38,8 @@ services:
       DATABASE_USER: egov_user
       DATABASE_PASSWORD: egov_pass
       DATABASE_NAME: e_gov_portal
-      KEYCLOAK_ISSUER: http://keycloak:8080/realms/e-gov-portal
+      KEYCLOAK_ISSUER: http://localhost:8080/realms/e-gov-portal
+      KEYCLOAK_INTERNAL_URL: http://keycloak:8080/realms/e-gov-portal
       KEYCLOAK_JWKS_URI: http://keycloak:8080/realms/e-gov-portal/protocol/openid-connect/certs
     depends_on:
       - postgres

@@ -5,45 +5,52 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { ScholarshipApplication, ApplicationStatus } from './scholarship.entity';
+import {
+  ScholarshipApplication,
+  ApplicationStatus,
+} from './scholarship.entity';
 import { getNextStatusFromRule } from './application-status.rules';
 import { StatusAction } from './dto/update-status.dto';
 import { ZenEngine } from '@gorules/zen-engine';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 
-export interface SubmitApplicationDto {
-  applicantId: string;
-  gpa: number;
-  income: number;
-  achievements: boolean;
-  isOrphan: boolean;
-  isStudent: boolean;
-  hasID: boolean;
-  hasIncomeDoc: boolean;
-  hasStudentCert: boolean;
-  hasFamilyStatus: boolean;
-}
+import { SubmitApplicationDto } from './dto/submit-application.dto';
+import { PoliciesService } from '../policies/policies.service';
 
 @Injectable()
 export class ScholarshipService {
   constructor(
     @InjectRepository(ScholarshipApplication)
     private readonly applicationRepo: Repository<ScholarshipApplication>,
+    private readonly policiesService: PoliciesService,
   ) {}
 
   /**
    * Submit a scholarship application.
-   * Status is always SUBMITTED so an officer can move it to UNDER_REVIEW then APPROVE/REJECT (rules/application_status).
-   * Rules run for level, priority, document reason, and eligibility note (stored as reason for officer only).
+   * 1. Validate policies (seasonal window, student status, 1 per year).
+   * 2. Status is always SUBMITTED so an officer can move it to UNDER_REVIEW then APPROVE/REJECT (rules/application_status).
+   * 3. Rules run for level, priority, document reason, and eligibility note (stored as reason for officer only).
    */
-  async submitApplication(dto: SubmitApplicationDto): Promise<ScholarshipApplication> {
-    const [priorityScore, scholarshipLevel, docStatus, eligibility] = await Promise.all([
-      this.evaluatePriority(dto),
-      this.evaluateLevels(dto),
-      this.evaluateDocValidation(dto),
-      this.evaluateEligibility(dto),
-    ]);
+  async submitApplication(
+    dto: SubmitApplicationDto,
+  ): Promise<ScholarshipApplication> {
+    const policyResult = await this.policiesService.evaluatePolicy({
+      applicantId: dto.applicantId,
+      isStudent: dto.isStudent,
+    });
+
+    if (!policyResult.eligible) {
+      throw new BadRequestException(`Policy rejection: ${policyResult.reason}`);
+    }
+
+    const [priorityScore, scholarshipLevel, docStatus, eligibility] =
+      await Promise.all([
+        this.evaluatePriority(dto),
+        this.evaluateLevels(dto),
+        this.evaluateDocValidation(dto),
+        this.evaluateEligibility(dto),
+      ]);
 
     const reasonParts: string[] = [];
     if (docStatus.reason && docStatus.reason !== '-' && !docStatus.valid) {
