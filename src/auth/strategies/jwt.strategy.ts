@@ -27,8 +27,9 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      ...(audience && audience.trim() ? { audience: audience.trim() } : {}),
-      issuer,
+      // Temporarily disabling for Docker debugging
+      // ...(audience && audience.trim() ? { audience: audience.trim() } : {}),
+      // issuer,
       algorithms: ['RS256'],
       secretOrKeyProvider: passportJwtSecret({
         cache: true,

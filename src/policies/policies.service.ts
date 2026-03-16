@@ -57,10 +57,12 @@ export class PoliciesService {
       console.log('Policy decision output:', JSON.stringify(response));
 
       const result = response.result;
-      const eligible = result?.eligible === true;
-      const reason = result?.reason || (eligible ? 'Eligible' : 'Not eligible');
+      console.log('Zen Result:', JSON.stringify(result));
+      
+      const eligible = result && typeof result === 'object' && 'eligible' in result ? (result as any).eligible === true : false;
+      const reason = (result && typeof result === 'object' && 'reason' in result ? (result as any).reason : null) || (eligible ? 'Eligible' : 'Conditions not met');
 
-      return { eligible, reason };
+      return { eligible, reason: String(reason) };
     } catch (e) {
       console.error('Failed to evaluate rules/eligibility_policy:', e);
       const errorMessage = e instanceof Error ? e.message : 'Unknown error';

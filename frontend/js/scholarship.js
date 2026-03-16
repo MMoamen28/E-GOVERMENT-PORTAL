@@ -115,8 +115,9 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         
         const data = await res.json();
+        console.log('Eligibility Data:', data);
         
-        policyEl.textContent = (data.eligible ? '✅ ' : '❌ ') + (data.reason || 'No reason provided');
+        policyEl.textContent = (data.eligible ? '✅ ' : '❌ status: ') + (data.reason || 'Not eligible (no reason)');
         policyEl.classList.add(data.eligible ? 'alert-success' : 'alert-error');
         policyEl.style.display = 'block';
         // Force a reflow to trigger animation
