@@ -3,11 +3,14 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { BusinessLicenseController } from './business-license.controller';
 import { BusinessLicenseService } from './business-license.service';
 import { BusinessLicense } from './entities/business-license.entity';
+import { GoRulesService } from './gorules.service';
+import { FlowableService } from './flowable.service';
+import { FlowableTaskService } from './flowable-task.service';
 
 @Module({
-  // This line gives your service access to the database repository
-  imports: [TypeOrmModule.forFeature([BusinessLicense])], 
+  imports: [TypeOrmModule.forFeature([BusinessLicense])],
   controllers: [BusinessLicenseController],
-  providers: [BusinessLicenseService],
+  providers: [BusinessLicenseService, GoRulesService, FlowableService, FlowableTaskService],
+  exports: [BusinessLicenseService, GoRulesService, FlowableService, FlowableTaskService],
 })
 export class BusinessLicenseModule {}
