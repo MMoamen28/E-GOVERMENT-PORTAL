@@ -18,4 +18,10 @@ export class UpdateStatusDto {
     example: StatusAction.START_REVIEW,
   })
   action: StatusAction;
+
+  @ApiProperty({
+    description: 'Optional reason when rejecting (e.g. "Missing documents", "Must be student")',
+    required: false,
+  })
+  reason?: string;
 }

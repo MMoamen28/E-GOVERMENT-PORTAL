@@ -34,37 +34,38 @@ export class ScholarshipService {
 
   /**
    * Submit a scholarship application.
-   * Runs prioritized rules: Eligibility -> Doc Validation -> Priority -> Levels
+   * Status is always SUBMITTED so an officer can move it to UNDER_REVIEW then APPROVE/REJECT (rules/application_status).
+   * Rules run for level, priority, document reason, and eligibility note (stored as reason for officer only).
    */
   async submitApplication(dto: SubmitApplicationDto): Promise<ScholarshipApplication> {
-    // 1. Calculate Priority Score
-    const priorityScore = await this.evaluatePriority(dto);
+    const [priorityScore, scholarshipLevel, docStatus, eligibility] = await Promise.all([
+      this.evaluatePriority(dto),
+      this.evaluateLevels(dto),
+      this.evaluateDocValidation(dto),
+      this.evaluateEligibility(dto),
+    ]);
 
-    // 2. Determine Scholarship Level
-    const scholarshipLevel = await this.evaluateLevels(dto);
-
-    // 3. Validate Documents
-    const docStatus = await this.evaluateDocValidation(dto);
-
-    // 4. Check Eligibility
-    const eligibility = await this.evaluateEligibility(dto);
-    
-    if (!eligibility.eligible) {
-      return this.saveApplication(dto, {
-        status: ApplicationStatus.REJECTED,
-        reason: eligibility.reason || 'Ineligible based on policy',
-        priorityScore,
-        scholarshipLevel,
-      });
+    const reasonParts: string[] = [];
+    if (docStatus.reason && docStatus.reason !== '-' && !docStatus.valid) {
+      reasonParts.push(this.normalizeReason(docStatus.reason));
     }
+    if (!eligibility.eligible && eligibility.reason) {
+      reasonParts.push(this.normalizeReason(eligibility.reason));
+    }
+    const reason = reasonParts.length > 0 ? reasonParts.join('. ') : null;
 
     return this.saveApplication(dto, {
       status: ApplicationStatus.SUBMITTED,
       documentsValid: docStatus.valid,
-      reason: (docStatus.reason === '-' || !docStatus.reason) ? null : docStatus.reason,
+      reason: reason ?? undefined,
       priorityScore,
       scholarshipLevel,
     });
+  }
+
+  private normalizeReason(r: string): string {
+    if (!r || typeof r !== 'string') return '';
+    return r.replace(/^"|"$/g, '').trim();
   }
 
   private async saveApplication(dto: SubmitApplicationDto, extras: Partial<ScholarshipApplication>) {
@@ -79,8 +80,8 @@ export class ScholarshipService {
     try {
       const engine = new ZenEngine();
       const rulesPath = path.join(process.cwd(), 'rules', rulesetName);
-      const ruleContent = await fs.readFile(rulesPath);
-      const decision = engine.createDecision(ruleContent);
+      const ruleContent = await fs.readFile(rulesPath, 'utf-8');
+      const decision = engine.createDecision(JSON.parse(ruleContent) as object);
       console.log(`Evaluating ruleset: ${rulesetName} with input:`, JSON.stringify(input));
       const { result } = await decision.evaluate(input);
       console.log(`Ruleset: ${rulesetName} result:`, JSON.stringify(result));
@@ -92,49 +93,62 @@ export class ScholarshipService {
   }
 
   private async evaluateEligibility(dto: SubmitApplicationDto) {
-    // Note: 'applicationsThisYear' is hardcoded for now, would normally be a query
     const res = await this.evaluateRuleset('eligibility_policy', {
-      isStudent: dto.isStudent,
+      isStudent: dto.isStudent ?? true,
       applicationsThisYear: 0,
       applicationDate: new Date().toISOString().split('T')[0],
     });
+    const reason = res?.reason ? String(res.reason).replace(/^"|"$/g, '').trim() : null;
     return {
       eligible: res?.eligible === true || res?.eligible === 'true',
-      reason: res?.reason,
+      reason,
     };
   }
 
   private async evaluateDocValidation(dto: SubmitApplicationDto) {
     const res = await this.evaluateRuleset('document_validation', {
-      hasID: dto.hasID,
-      IDValid: dto.hasID, // Assume ID is valid if provided for now
-      hasIncomeDoc: dto.hasIncomeDoc,
-      hasStudentCert: dto.hasStudentCert,
-      hasFamilyStatus: dto.hasFamilyStatus,
+      hasID: dto.hasID ?? false,
+      IDValid: dto.hasID ?? false,
+      hasIncomeDoc: dto.hasIncomeDoc ?? false,
+      hasStudentCert: dto.hasStudentCert ?? false,
+      hasFamilyStatus: dto.hasFamilyStatus ?? false,
     });
+    const reason = res?.reason ? String(res.reason).replace(/^"|"$/g, '').trim() : null;
     return {
-      valid: res?.documentsValid === true || res?.documentsValid === 'true',
-      reason: res?.reason,
+      valid: reason === '-' || reason === null || reason === '',
+      reason: reason === '-' ? null : reason,
     };
   }
 
-  private async evaluatePriority(dto: SubmitApplicationDto) {
+  private async evaluatePriority(dto: SubmitApplicationDto): Promise<number> {
     const res = await this.evaluateRuleset('priority_rules', {
-      income: dto.income,
-      orphan: dto.isOrphan,
-      GPA: dto.gpa,
+      income: dto.income ?? 0,
+      orphan: dto.isOrphan ?? false,
+      GPA: dto.gpa ?? 0,
       applicationDate: new Date().toISOString().split('T')[0],
     });
-    return parseInt(res?.priorityScore || '0', 10);
+    const fromRule = parseInt(String(res?.priorityScore ?? res?.priority ?? '').trim() || '0', 10);
+    if (fromRule > 0) return Math.min(100, fromRule);
+    return Math.min(
+      100,
+      Math.round((dto.gpa ?? 0) * 20) + (dto.isOrphan ? 10 : 0) + (dto.achievements ? 5 : 0),
+    );
   }
 
-  private async evaluateLevels(dto: SubmitApplicationDto) {
+  private async evaluateLevels(dto: SubmitApplicationDto): Promise<string> {
     const res = await this.evaluateRuleset('scholarship', {
-      GPA: dto.gpa,
-      Income: dto.income,
-      Achievements: dto.achievements,
+      GPA: dto.gpa ?? 0,
+      Income: dto.income ?? 0,
+      Achievements: dto.achievements ?? false,
     });
-    return res?.ScholarshipLevel || 'NONE';
+    const level = (res?.ScholarshipLevel ?? res?.scholarshipLevel ?? '').replace(/^"|"$/g, '').trim();
+    if (level && level !== 'NONE') return level;
+    const g = dto.gpa ?? 0;
+    const inc = dto.income ?? 0;
+    if (g >= 3.8 && inc <= 2000) return 'LEVEL_3';
+    if (g >= 3.5 && inc <= 4000) return 'LEVEL_2';
+    if (g >= 3.0 && inc <= 6000) return 'LEVEL_1';
+    return 'NONE';
   }
 
   async findAll(): Promise<ScholarshipApplication[]> {
@@ -145,7 +159,11 @@ export class ScholarshipService {
     return this.applicationRepo.findOne({ where: { id } });
   }
 
-  async updateStatus(id: string, action: StatusAction): Promise<ScholarshipApplication> {
+  async updateStatus(
+    id: string,
+    action: StatusAction,
+    reason?: string,
+  ): Promise<ScholarshipApplication> {
     const application = await this.applicationRepo.findOne({ where: { id } });
     if (!application) throw new NotFoundException(`Application ${id} not found`);
     const nextStatus = getNextStatusFromRule(application.status, action);
@@ -153,6 +171,9 @@ export class ScholarshipService {
       throw new BadRequestException(`Invalid status transition: ${action} from ${application.status}`);
     }
     application.status = nextStatus;
+    if (nextStatus === ApplicationStatus.REJECTED && reason?.trim()) {
+      application.reason = reason.trim();
+    }
     return this.applicationRepo.save(application);
   }
 }
