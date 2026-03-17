@@ -44,5 +44,22 @@ services:
       - postgres
       - keycloak
 
+  flowable:
+    image: flowable/flowable-rest:6.8.0
+    container_name: e_gov_flowable
+    restart: always
+    environment:
+      spring.datasource.url: jdbc:postgresql://postgres:5432/e_gov_portal
+      spring.datasource.username: egov_user
+      spring.datasource.password: egov_pass
+      spring.datasource.driver-class-name: org.postgresql.Driver
+      flowable.rest.app.admin.user-id: admin
+      flowable.rest.app.admin.password: test
+      flowable.common.app.idm-url: http://flowable:8080/flowable-idm
+    ports:
+      - "8090:8080"
+    depends_on:
+      - postgres
+
 volumes:
   pgdata:

@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" 
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+             xmlns:xsd="http://www.w3.org/2001/XMLSchema" 
+             xmlns:flowable="http://flowable.org/bpmn" 
+             xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" 
+             xmlns:omgdc="http://www.omg.org/spec/DD/20100524/DC" 
+             xmlns:omgdi="http://www.omg.org/spec/DD/20100524/DI" 
+             typeLanguage="http://www.w3.org/2001/XMLSchema" 
+             expressionLanguage="http://www.w3.org/1999/XPath" 
+             targetNamespace="http://www.flowable.org/processdef">
+             
+  <process id="govPortalWorkflow" name="E-Government Portal Universal Workflow" isExecutable="true">
+    
+    <documentation>
+      This workflow handles the end-to-end processing of any government service request.
+      It includes automated eligibility checks via rules engines and manual officer review.
+    </documentation>
+
+    <!-- 1. Start: Citizen Submits Request -->
+    <startEvent id="citizenSubmission" name="Citizen Submits Service Request">
+      <extensionElements>
+        <flowable:formData>
+          <flowable:formProperty id="serviceType" name="Service Type" type="string" required="true" />
+          <flowable:formProperty id="applicantId" name="Applicant ID" type="string" required="true" />
+        </flowable:formData>
+      </extensionElements>
+    </startEvent>
+
+    <!-- 2. Automated Validation (e.g. GoRules integration) -->
+    <serviceTask id="automatedValidation" name="Automated Eligibility &amp; Document Check" 
+                 flowable:expression="${ruleValidationService.evaluate(execution)}">
+    </serviceTask>
+    
+    <sequenceFlow id="flowToValidation" sourceRef="citizenSubmission" targetRef="automatedValidation" />
+
+    <!-- 3. Decision Gateway -->
+    <exclusiveGateway id="eligibilityGateway" name="Is Eligible?" default="flowToReview" />
+    
+    <sequenceFlow id="flowToGateway" sourceRef="automatedValidation" targetRef="eligibilityGateway" />
+
+    <!-- 4. Path: Ineligible -->
+    <sequenceFlow id="flowToIneligible" name="Auto-Reject" sourceRef="eligibilityGateway" targetRef="serviceRejected">
+      <conditionExpression xsi:type="tFormalExpression">${eligible == false}</conditionExpression>
+    </sequenceFlow>
+
+    <!-- 5. Path: Manual Review Required -->
+    <userTask id="officerReview" name="Government Officer Review" 
+              flowable:candidateGroups="officers" 
+              flowable:category="${serviceType}">
+      <documentation>
+        Review application for ${serviceType} submitted by ${applicantId}.
+      </documentation>
+    </userTask>
+    
+    <sequenceFlow id="flowToReview" name="Manual Review" sourceRef="eligibilityGateway" targetRef="officerReview" />
+
+    <!-- 6. Post-Review Decision -->
+    <exclusiveGateway id="reviewGateway" name="Officer Decision" />
+    
+    <sequenceFlow id="flowToReviewGateway" sourceRef="officerReview" targetRef="reviewGateway" />
+
+    <!-- 7. Completion States -->
+    <sequenceFlow id="flowToApproved" name="Approve" sourceRef="reviewGateway" targetRef="serviceApproved">
+      <conditionExpression xsi:type="tFormalExpression">${approved == true}</conditionExpression>
+    </sequenceFlow>
+    
+    <sequenceFlow id="flowToRejected" name="Reject" sourceRef="reviewGateway" targetRef="serviceRejected">
+      <conditionExpression xsi:type="tFormalExpression">${approved == false}</conditionExpression>
+    </sequenceFlow>
+
+    <serviceTask id="serviceApproved" name="Notify Citizen of Approval" 
+                 flowable:expression="${notificationService.sendApproval(execution)}" />
+                 
+    <serviceTask id="serviceRejected" name="Notify Citizen of Rejection" 
+                 flowable:expression="${notificationService.sendRejection(execution)}" />
+
+    <endEvent id="endEvent" name="Process Complete" />
+    
+    <sequenceFlow id="flowEnd1" sourceRef="serviceApproved" targetRef="endEvent" />
+    <sequenceFlow id="flowEnd2" sourceRef="serviceRejected" targetRef="endEvent" />
+
+  </process>
+
+</definitions>

@@ -11,6 +11,7 @@ import { StatusAction } from './dto/update-status.dto';
 import { ZenEngine } from '@gorules/zen-engine';
 import * as fs from 'fs/promises';
 import * as path from 'path';
+import { FlowableService } from '../flowable/flowable.service';
 
 export interface SubmitApplicationDto {
   applicantId: string;
@@ -30,6 +31,7 @@ export class ScholarshipService {
   constructor(
     @InjectRepository(ScholarshipApplication)
     private readonly applicationRepo: Repository<ScholarshipApplication>,
+    private readonly flowableService: FlowableService,
   ) {}
 
   /**
@@ -58,13 +60,28 @@ export class ScholarshipService {
       });
     }
 
-    return this.saveApplication(dto, {
+    const savedApp = await this.saveApplication(dto, {
       status: ApplicationStatus.SUBMITTED,
       documentsValid: docStatus.valid,
       reason: (docStatus.reason === '-' || !docStatus.reason) ? null : docStatus.reason,
       priorityScore,
       scholarshipLevel,
     });
+
+    try {
+      const processInstance = await this.flowableService.startProcessInstance('scholarshipProcess', {
+        applicationId: savedApp.id,
+        applicantId: savedApp.applicantId,
+        priorityScore: savedApp.priorityScore,
+        scholarshipLevel: savedApp.scholarshipLevel,
+      });
+      savedApp.processInstanceId = processInstance.id;
+      return this.applicationRepo.save(savedApp);
+    } catch (error) {
+      console.error('Failed to start Flowable process:', error);
+      // We still return the saved application, but it might not have a process instance id
+      return savedApp;
+    }
   }
 
   private async saveApplication(dto: SubmitApplicationDto, extras: Partial<ScholarshipApplication>) {
