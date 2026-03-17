@@ -69,6 +69,6 @@ export class ScholarshipController {
   @ApiResponse({ status: 403, description: 'Forbidden (requires officer or admin role).' })
   @ApiResponse({ status: 404, description: 'Application not found.' })
   async updateStatus(@Param('id') id: string, @Body() dto: UpdateStatusDto) {
-    return this.scholarshipService.updateStatus(id, dto.action);
+    return this.scholarshipService.updateStatus(id, dto.action, dto.reason);
   }
 }
