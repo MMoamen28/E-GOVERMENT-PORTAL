@@ -10,6 +10,7 @@
   "resetPasswordAllowed": true,
   "editUsernameAllowed": false,
   "bruteForceProtected": false,
+  "defaultRoles": ["default-roles-e-gov-portal"],
   "roles": {
     "realm": [
       {
@@ -58,7 +59,7 @@
         "description": "${role_default-roles}",
         "composite": true,
         "composites": {
-          "realm": ["offline_access", "uma_authorization"],
+          "realm": ["applicant", "offline_access", "uma_authorization"],
           "client": {}
         },
         "clientRole": false,

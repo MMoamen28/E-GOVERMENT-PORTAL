@@ -13,7 +13,8 @@ export enum StatusAction {
 
 export class UpdateStatusDto {
   @ApiProperty({
-    description: 'Action to perform on the application (evaluated against rules/application_status)',
+    description:
+      'Action to perform on the application (evaluated against rules/application_status)',
     enum: StatusAction,
     example: StatusAction.START_REVIEW,
   })

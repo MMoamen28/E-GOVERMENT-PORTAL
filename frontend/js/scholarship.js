@@ -58,6 +58,14 @@ document.addEventListener('DOMContentLoaded', function () {
     showLogin();
   });
 
+  var registerLink = document.getElementById('auth-register');
+  if (registerLink) {
+    registerLink.addEventListener('click', function (e) {
+      e.preventDefault();
+      window.EgovAuth.openRegistration();
+    });
+  }
+
   // ——— Login form ———
   var loginForm = document.getElementById('loginForm');
   if (loginForm) {
@@ -86,6 +94,77 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 
+  // ——— Check Eligibility ———
+  const checkBtn = document.getElementById('btn-check-eligibility');
+  const policyEl = document.getElementById('policy-result');
+
+  if (checkBtn) {
+    checkBtn.addEventListener('click', async function() {
+      const applicantIdEl = document.getElementById('apply-applicantId');
+      const isStudentEl = document.getElementById('apply-student');
+      const applicantId = applicantIdEl ? applicantIdEl.value : '';
+      const isStudent = isStudentEl ? isStudentEl.checked : true;
+
+      if (!applicantId) {
+        policyEl.textContent = 'Please sign in first to check eligibility.';
+        policyEl.className = 'alert alert-error reveal';
+        policyEl.style.display = 'block';
+        return;
+      }
+
+      policyEl.style.display = 'none';
+      policyEl.classList.remove('active');
+      policyEl.className = 'alert reveal';
+
+      const origText = checkBtn.innerHTML;
+      checkBtn.disabled = true;
+      checkBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Checking…';
+
+      try {
+        const res = await window.EgovAuth.apiFetch('/policies/evaluate', {
+          method: 'POST',
+          body: JSON.stringify({ applicantId, isStudent }),
+        });
+
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          var errMsg = data.message || (res.status === 401 ? 'Session expired (Unauthorized)' : 'Error checking eligibility');
+          if (res.status === 403 && (errMsg.indexOf('role') !== -1 || errMsg.indexOf('applicant') !== -1)) {
+            errMsg = 'Your account does not have the Applicant role. Sign out, then Register to create a new account (new accounts get the role automatically), or ask an administrator to assign you the Applicant role in Keycloak.';
+          }
+          throw new Error(errMsg);
+        }
+
+        const data = await res.json();
+        console.log('Eligibility Data:', data);
+
+        if (data.eligible) {
+          policyEl.textContent = 'You are eligible to apply. You can submit your application above.';
+          policyEl.classList.add('alert-success');
+        } else {
+          var reason = (data.reason || '').trim() || 'Conditions not met';
+          policyEl.innerHTML = 'You are not eligible: <strong>' + reason + '</strong>. ' +
+            (reason.indexOf('Already applied') !== -1
+              ? 'You can <a href="#" id="link-register-another">create another account</a> to test again.'
+              : '');
+          policyEl.classList.add('alert-error');
+          var regLink = document.getElementById('link-register-another');
+          if (regLink) regLink.addEventListener('click', function (e) { e.preventDefault(); window.EgovAuth.openRegistration(); });
+        }
+        policyEl.style.display = 'block';
+        policyEl.offsetHeight;
+        policyEl.classList.add('active');
+      } catch (err) {
+        policyEl.textContent = (err.message || 'Error checking eligibility.') + ' Make sure you are signed in and the server is running.';
+        policyEl.classList.add('alert-error');
+        policyEl.style.display = 'block';
+      } finally {
+        checkBtn.disabled = false;
+        checkBtn.innerHTML = origText;
+      }
+    });
+  }
+
   // ——— Apply form ———
   document.getElementById('applyForm').addEventListener('submit', async function (e) {
     e.preventDefault();
@@ -93,6 +172,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const gpa = parseFloat(document.getElementById('apply-gpa').value);
     const income = parseFloat(document.getElementById('apply-income').value);
     const achievements = document.getElementById('apply-achievements').checked;
+
     const isOrphan = document.getElementById('apply-orphan').checked;
     const isStudent = document.getElementById('apply-student').checked;
     const hasID = document.getElementById('apply-hasID').checked;
@@ -100,10 +180,15 @@ document.addEventListener('DOMContentLoaded', function () {
     const hasStudentCert = document.getElementById('apply-hasStudentCert').checked;
     const hasFamilyStatus = document.getElementById('apply-hasFamilyStatus').checked;
 
+
     const successEl = document.getElementById('apply-success');
     const errorEl = document.getElementById('apply-error');
+    const policyEl = document.getElementById('policy-result');
+
     successEl.style.display = 'none';
     errorEl.style.display = 'none';
+    policyEl.style.display = 'none';
+
     const btn = this.querySelector('button[type="submit"]');
     const origText = btn.innerHTML;
     btn.disabled = true;
@@ -111,6 +196,7 @@ document.addEventListener('DOMContentLoaded', function () {
     try {
       const res = await window.EgovAuth.apiFetch('/scholarship/apply', {
         method: 'POST',
+
         body: JSON.stringify({ 
           applicantId, 
           gpa, 
@@ -123,10 +209,15 @@ document.addEventListener('DOMContentLoaded', function () {
           hasStudentCert,
           hasFamilyStatus
         }),
+
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data.message || 'Submit failed');
+        var msg = data.message || 'Submit failed';
+        if (res.status === 403 && (msg.indexOf('role') !== -1 || msg.indexOf('applicant') !== -1)) {
+          msg = 'Your account does not have permission to apply. Newly registered users need the Applicant role. Sign out, then use Register to create a new account (new accounts get the role automatically). Or ask an administrator to assign you the Applicant role in Keycloak.';
+        }
+        throw new Error(msg);
       }
       successEl.textContent = 'Application submitted successfully.';
       successEl.style.display = 'block';
@@ -170,6 +261,14 @@ document.addEventListener('DOMContentLoaded', function () {
         emptyEl.style.display = 'block';
         var signOutLink = document.getElementById('sign-out-retry');
         if (signOutLink) signOutLink.addEventListener('click', function (e) { e.preventDefault(); window.EgovAuth.logout(); showLogin(); });
+        return;
+      }
+      if (res.status === 403) {
+        loadingEl.style.display = 'none';
+        emptyEl.innerHTML = 'Your account does not have permission to view applications. If you just registered, sign out and use <a href="#" id="link-register-from-list">Register</a> to create a new account (new accounts get the right role). Or ask an administrator to assign you the Applicant role in Keycloak.';
+        emptyEl.style.display = 'block';
+        var regLinkFromList = document.getElementById('link-register-from-list');
+        if (regLinkFromList) regLinkFromList.addEventListener('click', function (e) { e.preventDefault(); window.EgovAuth.logout(); window.EgovAuth.openRegistration(); });
         return;
       }
       if (!res.ok) throw new Error('Failed to load applications');

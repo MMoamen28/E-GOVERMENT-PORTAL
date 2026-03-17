@@ -7,9 +7,18 @@ import { StatusAction } from './dto/update-status.dto';
  * See ruleset-mapping.json: "appstatus": "rules/application_status"
  */
 const ALLOWED_TRANSITIONS: Map<string, ApplicationStatus> = new Map([
-  [`${ApplicationStatus.SUBMITTED}:${StatusAction.START_REVIEW}`, ApplicationStatus.UNDER_REVIEW],
-  [`${ApplicationStatus.UNDER_REVIEW}:${StatusAction.APPROVE}`, ApplicationStatus.APPROVED],
-  [`${ApplicationStatus.UNDER_REVIEW}:${StatusAction.REJECT}`, ApplicationStatus.REJECTED],
+  [
+    `${ApplicationStatus.SUBMITTED}:${StatusAction.START_REVIEW}`,
+    ApplicationStatus.UNDER_REVIEW,
+  ],
+  [
+    `${ApplicationStatus.UNDER_REVIEW}:${StatusAction.APPROVE}`,
+    ApplicationStatus.APPROVED,
+  ],
+  [
+    `${ApplicationStatus.UNDER_REVIEW}:${StatusAction.REJECT}`,
+    ApplicationStatus.REJECTED,
+  ],
 ]);
 
 export function getNextStatusFromRule(

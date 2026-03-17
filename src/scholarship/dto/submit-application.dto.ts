@@ -10,7 +10,10 @@ export class SubmitApplicationDto {
   @ApiProperty({ description: 'Household income', example: 25000 })
   income: number;
 
-  @ApiProperty({ description: 'Whether the applicant has achievements', example: true })
+  @ApiProperty({
+    description: 'Whether the applicant has achievements',
+    example: true,
+  })
   achievements: boolean;
 
   @ApiProperty({ description: 'Orphan status', example: false })

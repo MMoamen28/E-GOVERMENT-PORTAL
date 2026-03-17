@@ -6,11 +6,24 @@
   const STORAGE_TOKEN = 'egov_scholarship_token';
   const STORAGE_USER = 'egov_scholarship_user';
 
+  const KEYCLOAK_REALM = 'e-gov-portal';
+  const KEYCLOAK_CLIENT = 'scholarship-frontend';
+
+  function keycloakBaseUrl() {
+    return (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+      ? window.location.protocol + '//' + window.location.hostname + ':8080'
+      : (window.location.origin.replace(/:\d+$/, '') + ':8080');
+  }
+
   function keycloakTokenUrl() {
-    const base = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-      ? `${window.location.protocol}//${window.location.hostname}:8080`
-      : `${window.location.origin.replace(/:\d+$/, '')}:8080`;
-    return `${base}/realms/e-gov-portal/protocol/openid-connect/token`;
+    return keycloakBaseUrl() + '/realms/' + KEYCLOAK_REALM + '/protocol/openid-connect/token';
+  }
+
+  /** Open Keycloak registration page; redirect back to current page after sign-up. */
+  function openRegistration() {
+    const redirectUri = encodeURIComponent(window.location.href);
+    const url = keycloakBaseUrl() + '/realms/' + KEYCLOAK_REALM + '/protocol/openid-connect/registrations?client_id=' + KEYCLOAK_CLIENT + '&redirect_uri=' + redirectUri + '&response_type=code&scope=openid';
+    window.location.href = url;
   }
 
   function decodeJwtPayload(token) {
@@ -26,6 +39,7 @@
 
   window.EgovAuth = {
     getTokenUrl: keycloakTokenUrl,
+    openRegistration: openRegistration,
 
     async login(username, password) {
       const res = await fetch('/auth/login', {

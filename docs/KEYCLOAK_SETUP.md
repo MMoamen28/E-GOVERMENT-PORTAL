@@ -73,3 +73,15 @@ If the realm already exists, Keycloak **skips** import on startup. To re-import 
 3. Start again: `docker compose up -d`.
 
 Or run a one-time import using Keycloak’s CLI inside the container (see Keycloak docs). If you see **No users found**: delete the e-gov-portal realm in Admin, then `docker compose restart keycloak` to re-import (realm JSON now includes users). Or create users manually. Self-registration is enabled via the Register link on the login page.
+
+## New user registration and roles
+
+The realm is configured so that **newly registered users** get the **applicant** role by default. For this to work you must **re-import the realm** once (see “Re-importing the realm” above). After re-import, any user who registers through the portal will be able to submit applications.
+
+**If you see “Requires one of these roles: applicant, officer, admin” when signed in:**
+
+- Your account was created **before** the realm was re-imported, so it does not have the Applicant role.
+- **Option A:** Sign out, then use **Register** to create a **new** account. New accounts get the Applicant role automatically.
+- **Option B:** In Keycloak Admin (http://localhost:8080), go to **Users** → select your user → **Role mapping** → assign the **applicant** role.
+
+The realm JSON now includes **defaultRoles**: `["default-roles-e-gov-portal"]`, so Keycloak will assign that composite (which includes applicant) to every new user. Re-import the realm (delete it in Admin, then restart Keycloak) so this setting is applied; after that, new registrations get the applicant role automatically.

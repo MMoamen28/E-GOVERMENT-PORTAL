@@ -5,7 +5,10 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { ScholarshipApplication, ApplicationStatus } from './scholarship.entity';
+import {
+  ScholarshipApplication,
+  ApplicationStatus,
+} from './scholarship.entity';
 import { getNextStatusFromRule } from './application-status.rules';
 import { StatusAction } from './dto/update-status.dto';
 import { ZenEngine } from '@gorules/zen-engine';
@@ -13,18 +16,8 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 import { FlowableService } from '../flowable/flowable.service';
 
-export interface SubmitApplicationDto {
-  applicantId: string;
-  gpa: number;
-  income: number;
-  achievements: boolean;
-  isOrphan: boolean;
-  isStudent: boolean;
-  hasID: boolean;
-  hasIncomeDoc: boolean;
-  hasStudentCert: boolean;
-  hasFamilyStatus: boolean;
-}
+import { SubmitApplicationDto } from './dto/submit-application.dto';
+import { PoliciesService } from '../policies/policies.service';
 
 @Injectable()
 export class ScholarshipService {
@@ -32,27 +25,41 @@ export class ScholarshipService {
     @InjectRepository(ScholarshipApplication)
     private readonly applicationRepo: Repository<ScholarshipApplication>,
     private readonly flowableService: FlowableService,
+    private readonly policiesService: PoliciesService,
   ) {}
 
   /**
    * Submit a scholarship application.
-   * Status is always SUBMITTED so an officer can move it to UNDER_REVIEW then APPROVE/REJECT (rules/application_status).
-   * Rules run for level, priority, document reason, and eligibility note (stored as reason for officer only).
+   * 1. Validate policies (seasonal window, student status, 1 per year).
+   * 2. Status is always SUBMITTED so an officer can move it to UNDER_REVIEW then APPROVE/REJECT (rules/application_status).
+   * 3. Rules run for level, priority, document reason, and eligibility note (stored as reason for officer only).
    */
-  async submitApplication(dto: SubmitApplicationDto): Promise<ScholarshipApplication> {
-    const [priorityScore, scholarshipLevel, docStatus, eligibility] = await Promise.all([
+  async submitApplication(
+    dto: SubmitApplicationDto,
+  ): Promise<ScholarshipApplication> {
+    // Single eligibility check using rules/eligibility_policy (isStudent, applicationsThisYear, applicationDate)
+    const policyResult = await this.policiesService.evaluatePolicy({
+      applicantId: dto.applicantId,
+      isStudent: dto.isStudent,
+    });
+
+    if (!policyResult.eligible) {
+      throw new BadRequestException(`Policy rejection: ${policyResult.reason}`);
+    }
+
+    const [priorityScore, scholarshipLevel, docStatus] = await Promise.all([
       this.evaluatePriority(dto),
       this.evaluateLevels(dto),
       this.evaluateDocValidation(dto),
-      this.evaluateEligibility(dto),
     ]);
 
     const reasonParts: string[] = [];
     if (docStatus.reason && docStatus.reason !== '-' && !docStatus.valid) {
       reasonParts.push(this.normalizeReason(docStatus.reason));
     }
-    if (!eligibility.eligible && eligibility.reason) {
-      reasonParts.push(this.normalizeReason(eligibility.reason));
+    // Eligibility reason from policy (rules/eligibility_policy) – only store when not "-"
+    if (policyResult.reason && policyResult.reason !== '-') {
+      reasonParts.push(this.normalizeReason(policyResult.reason));
     }
     const reason = reasonParts.length > 0 ? reasonParts.join('. ') : null;
 
@@ -107,19 +114,6 @@ export class ScholarshipService {
       console.error(`Failed to evaluate ruleset ${rulesetName}:`, e);
       return null;
     }
-  }
-
-  private async evaluateEligibility(dto: SubmitApplicationDto) {
-    const res = await this.evaluateRuleset('eligibility_policy', {
-      isStudent: dto.isStudent ?? true,
-      applicationsThisYear: 0,
-      applicationDate: new Date().toISOString().split('T')[0],
-    });
-    const reason = res?.reason ? String(res.reason).replace(/^"|"$/g, '').trim() : null;
-    return {
-      eligible: res?.eligible === true || res?.eligible === 'true',
-      reason,
-    };
   }
 
   private async evaluateDocValidation(dto: SubmitApplicationDto) {
