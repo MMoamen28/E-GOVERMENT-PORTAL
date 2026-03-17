@@ -193,4 +193,68 @@ export class ScholarshipService {
     }
     return this.applicationRepo.save(application);
   }
+
+  /**
+   * Get all Flowable tasks for an application's process instance
+   */
+  async getApplicationTasks(applicationId: string) {
+    const application = await this.applicationRepo.findOne({ where: { id: applicationId } });
+    if (!application) throw new NotFoundException(`Application ${applicationId} not found`);
+    if (!application.processInstanceId) {
+      throw new BadRequestException(`Application ${applicationId} has no active Flowable process`);
+    }
+    return this.flowableService.getTasksForProcessInstance(application.processInstanceId);
+  }
+
+  /**
+   * Complete a Flowable task and update application status accordingly
+   */
+  async completeWorkflowTask(
+    applicationId: string,
+    taskId: string,
+    approvalDecision?: string,
+    reason?: string,
+  ): Promise<ScholarshipApplication> {
+    const application = await this.applicationRepo.findOne({ where: { id: applicationId } });
+    if (!application) throw new NotFoundException(`Application ${applicationId} not found`);
+    if (!application.processInstanceId) {
+      throw new BadRequestException(`Application ${applicationId} has no active Flowable process`);
+    }
+
+    // Prepare variables for the task
+    const taskVariables: any = {};
+    if (approvalDecision) {
+      taskVariables.approvalDecision = approvalDecision;
+    }
+    if (reason) {
+      taskVariables.rejectionReason = reason;
+    }
+
+    // Complete the task in Flowable
+    await this.flowableService.completeTask(taskId, taskVariables);
+
+    // Update application status based on the decision
+    if (approvalDecision === 'APPROVE') {
+      application.status = ApplicationStatus.APPROVED;
+    } else if (approvalDecision === 'REJECT') {
+      application.status = ApplicationStatus.REJECTED;
+      if (reason) {
+        application.reason = reason;
+      }
+    }
+
+    return this.applicationRepo.save(application);
+  }
+
+  /**
+   * Get the status of the Flowable process instance for an application
+   */
+  async getProcessStatus(applicationId: string) {
+    const application = await this.applicationRepo.findOne({ where: { id: applicationId } });
+    if (!application) throw new NotFoundException(`Application ${applicationId} not found`);
+    if (!application.processInstanceId) {
+      throw new BadRequestException(`Application ${applicationId} has no active Flowable process`);
+    }
+    return this.flowableService.getProcessInstance(application.processInstanceId);
+  }
 }

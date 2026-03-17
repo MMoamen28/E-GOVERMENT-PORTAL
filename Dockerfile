@@ -20,6 +20,7 @@ RUN npm ci --omit=dev
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/frontend ./frontend
 COPY --from=builder /app/rules ./rules
+COPY --from=builder /app/flowable ./flowable
 
 EXPOSE 3000
 

@@ -33,6 +33,7 @@
     "axios": "^1.13.6",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.4",
+    "form-data": "^4.0.5",
     "jwks-rsa": "^4.0.1",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",

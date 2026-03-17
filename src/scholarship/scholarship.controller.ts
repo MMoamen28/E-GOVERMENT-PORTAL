@@ -71,4 +71,46 @@ export class ScholarshipController {
   async updateStatus(@Param('id') id: string, @Body() dto: UpdateStatusDto) {
     return this.scholarshipService.updateStatus(id, dto.action, dto.reason);
   }
+
+  @Get(':id/workflow/tasks')
+  @Roles('officer', 'admin')
+  @ApiOperation({
+    summary: 'Get Flowable workflow tasks for an application',
+    description: 'Retrieve all pending tasks for the workflow process instance associated with an application.'
+  })
+  @ApiParam({ name: 'id', description: 'Application UUID' })
+  @ApiResponse({ status: 200, description: 'List of workflow tasks.' })
+  @ApiResponse({ status: 404, description: 'Application not found or no process instance.' })
+  async getWorkflowTasks(@Param('id') id: string) {
+    return this.scholarshipService.getApplicationTasks(id);
+  }
+
+  @Post(':id/workflow/complete-task')
+  @Roles('officer', 'admin')
+  @ApiOperation({
+    summary: 'Complete a Flowable workflow task',
+    description: 'Mark a task as complete with optional variables and update application status.'
+  })
+  @ApiParam({ name: 'id', description: 'Application UUID' })
+  @ApiResponse({ status: 200, description: 'Task completed successfully.' })
+  @ApiResponse({ status: 404, description: 'Application or task not found.' })
+  async completeTask(
+    @Param('id') id: string,
+    @Body() body: { taskId: string; approvalDecision?: string; reason?: string }
+  ) {
+    return this.scholarshipService.completeWorkflowTask(id, body.taskId, body.approvalDecision, body.reason);
+  }
+
+  @Get(':id/workflow/status')
+  @Roles('officer', 'admin')
+  @ApiOperation({
+    summary: 'Get Flowable workflow process status',
+    description: 'Retrieve the current status and variables of the workflow process instance.'
+  })
+  @ApiParam({ name: 'id', description: 'Application UUID' })
+  @ApiResponse({ status: 200, description: 'Process instance status.' })
+  @ApiResponse({ status: 404, description: 'Application not found or no process instance.' })
+  async getWorkflowStatus(@Param('id') id: string) {
+    return this.scholarshipService.getProcessStatus(id);
+  }
 }

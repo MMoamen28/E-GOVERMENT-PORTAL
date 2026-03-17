@@ -1,53 +1,141 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" 
-             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
-             xmlns:xsd="http://www.w3.org/2001/XMLSchema" 
-             xmlns:flowable="http://flowable.org/bpmn" 
-             xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" 
-             xmlns:omgdc="http://www.omg.org/spec/DD/20100524/DC" 
-             xmlns:omgdi="http://www.omg.org/spec/DD/20100524/DI" 
-             typeLanguage="http://www.w3.org/2001/XMLSchema" 
-             expressionLanguage="http://www.w3.org/1999/XPath" 
-             targetNamespace="http://www.flowable.org/processdef">
-             
-  <process id="govPortalWorkflow" name="E-Government Portal Universal Workflow" isExecutable="true">
-    
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:flowable="http://flowable.org/bpmn" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:omgdc="http://www.omg.org/spec/DD/20100524/DC" xmlns:omgdi="http://www.omg.org/spec/DD/20100524/DI" typeLanguage="http://www.w3.org/2001/XMLSchema" expressionLanguage="http://www.w3.org/1999/XPath" targetNamespace="http://www.flowable.org/processdef">
+  <process id="govPortalWorkflow" name="E-Government Portal Service Request Process" isExecutable="true">
     <documentation>
-      This workflow handles the end-to-end processing of any government service request.
-      It includes automated eligibility checks via rules engines and manual officer review.
+      Universal workflow for government service requests.
+      Handles citizen submission, automated validation, manual review, and notification.
     </documentation>
 
-    <!-- 1. Start: Citizen Submits Request -->
-    <startEvent id="citizenSubmission" name="Citizen Submits Service Request">
-      <extensionElements>
-        <flowable:formData>
-          <flowable:formProperty id="serviceType" name="Service Type" type="string" required="true" />
-          <flowable:formProperty id="applicantId" name="Applicant ID" type="string" required="true" />
-        </flowable:formData>
-      </extensionElements>
-    </startEvent>
+    <!-- 1. Start Event -->
+    <startEvent id="citizenSubmission" name="Citizen Submits Service Request"></startEvent>
+    <sequenceFlow id="flow1" sourceRef="citizenSubmission" targetRef="automatedValidation"></sequenceFlow>
 
-    <!-- 2. Automated Validation (e.g. GoRules integration) -->
-    <serviceTask id="automatedValidation" name="Automated Eligibility &amp; Document Check" 
-                 flowable:expression="${ruleValidationService.evaluate(execution)}">
+    <!-- 2. Automated Eligibility Check (Rules Engine) -->
+    <serviceTask id="automatedValidation" name="Run Eligibility Rules" flowable:class="org.flowable.spring.service.ValidationService">
+      <documentation>Execute GoRules or internal rules for automatic validation</documentation>
     </serviceTask>
-    
-    <sequenceFlow id="flowToValidation" sourceRef="citizenSubmission" targetRef="automatedValidation" />
+    <sequenceFlow id="flow2" sourceRef="automatedValidation" targetRef="eligibilityGateway"></sequenceFlow>
 
-    <!-- 3. Decision Gateway -->
-    <exclusiveGateway id="eligibilityGateway" name="Is Eligible?" default="flowToReview" />
-    
-    <sequenceFlow id="flowToGateway" sourceRef="automatedValidation" targetRef="eligibilityGateway" />
+    <!-- 3. Eligibility Decision Gateway -->
+    <exclusiveGateway id="eligibilityGateway" name="Eligible?"></exclusiveGateway>
+    <sequenceFlow id="flow3_ineligible" name="Auto-Reject" sourceRef="eligibilityGateway" targetRef="autoReject">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${eligible == false}]]></conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="flow3_eligible" name="Proceed to Review" sourceRef="eligibilityGateway" targetRef="officerReview"></sequenceFlow>
 
-    <!-- 4. Path: Ineligible -->
-    <sequenceFlow id="flowToIneligible" name="Auto-Reject" sourceRef="eligibilityGateway" targetRef="serviceRejected">
-      <conditionExpression xsi:type="tFormalExpression">${eligible == false}</conditionExpression>
+    <!-- 4. Auto-Reject Path -->
+    <serviceTask id="autoReject" name="Auto-Reject Service" flowable:class="org.flowable.spring.service.RejectService">
+      <documentation>Automatically reject ineligible applications</documentation>
+    </serviceTask>
+    <sequenceFlow id="flow4" sourceRef="autoReject" targetRef="notifyRejection"></sequenceFlow>
+
+    <!-- 5. Officer Review Task -->
+    <userTask id="officerReview" name="Government Officer Review" flowable:candidateGroups="officers">
+      <documentation>Officer reviews eligibility documents and makes decision. Applicant ID: ${applicantId}</documentation>
+    </userTask>
+    <sequenceFlow id="flow5" sourceRef="officerReview" targetRef="officerDecision"></sequenceFlow>
+
+    <!-- 6. Officer Decision Gateway -->
+    <exclusiveGateway id="officerDecision" name="Officer Decision"></exclusiveGateway>
+    <sequenceFlow id="flow6_approve" name="Approve" sourceRef="officerDecision" targetRef="approveService">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${approvalDecision == 'APPROVE'}]]></conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="flow6_reject" name="Reject" sourceRef="officerDecision" targetRef="rejectService">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${approvalDecision == 'REJECT'}]]></conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="flow6_more_info" name="Request More Info" sourceRef="officerDecision" targetRef="requestInfo">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${approvalDecision == 'REQUEST_INFO'}]]></conditionExpression>
     </sequenceFlow>
 
-    <!-- 5. Path: Manual Review Required -->
-    <userTask id="officerReview" name="Government Officer Review" 
-              flowable:candidateGroups="officers" 
-              flowable:category="${serviceType}">
+    <!-- 7. Approval Path -->
+    <serviceTask id="approveService" name="Approve Service Request" flowable:class="org.flowable.spring.service.ApproveService">
+      <documentation>Update database status to APPROVED</documentation>
+    </serviceTask>
+    <sequenceFlow id="flow7" sourceRef="approveService" targetRef="notifyApproval"></sequenceFlow>
+
+    <!-- 8. Rejection Path -->
+    <serviceTask id="rejectService" name="Reject Service Request" flowable:class="org.flowable.spring.service.RejectService">
+      <documentation>Update database status to REJECTED</documentation>
+    </serviceTask>
+    <sequenceFlow id="flow8" sourceRef="rejectService" targetRef="notifyRejection"></sequenceFlow>
+
+    <!-- 9. Request More Info Path -->
+    <serviceTask id="requestInfo" name="Request Additional Information" flowable:class="org.flowable.spring.service.NotifyService">
+      <documentation>Send request for additional documents/information to citizen</documentation>
+    </serviceTask>
+    <sequenceFlow id="flow9" sourceRef="requestInfo" targetRef="waitForInfo"></sequenceFlow>
+
+    <!-- 10. Wait for Resubmission -->
+    <userTask id="waitForInfo" name="Wait for Citizen Resubmission" flowable:candidateGroups="system">
+      <documentation>Waiting for citizen to submit additional information</documentation>
+    </userTask>
+    <sequenceFlow id="flow10" sourceRef="waitForInfo" targetRef="officerReview"></sequenceFlow>
+
+    <!-- 11. Approval Notification -->
+    <serviceTask id="notifyApproval" name="Send Approval Notification" flowable:class="org.flowable.spring.service.NotifyService">
+      <documentation>Send email/SMS to citizen about approval</documentation>
+    </serviceTask>
+    <sequenceFlow id="flow11" sourceRef="notifyApproval" targetRef="endApproved"></sequenceFlow>
+
+    <!-- 12. Rejection Notification -->
+    <serviceTask id="notifyRejection" name="Send Rejection Notification" flowable:class="org.flowable.spring.service.NotifyService">
+      <documentation>Send email/SMS to citizen about rejection</documentation>
+    </serviceTask>
+    <sequenceFlow id="flow12" sourceRef="notifyRejection" targetRef="endRejected"></sequenceFlow>
+
+    <!-- 13. End Events -->
+    <endEvent id="endApproved" name="Service Approved"></endEvent>
+    <endEvent id="endRejected" name="Service Rejected"></endEvent>
+  </process>
+
+  <!-- Diagram Information -->
+  <bpmndi:BPMNDiagram id="BPMNDiagram_govPortalWorkflow">
+    <bpmndi:BPMNPlane bpmnElement="govPortalWorkflow" id="BPMNPlane_govPortalWorkflow">
+      <bpmndi:BPMNShape bpmnElement="citizenSubmission" id="BPMNShape_citizenSubmission">
+        <omgdc:Bounds height="30.0" width="30.0" x="50.0" y="100.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="automatedValidation" id="BPMNShape_automatedValidation">
+        <omgdc:Bounds height="80.0" width="100.0" x="100.0" y="75.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="eligibilityGateway" id="BPMNShape_eligibilityGateway">
+        <omgdc:Bounds height="40.0" width="40.0" x="235.0" y="95.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="autoReject" id="BPMNShape_autoReject">
+        <omgdc:Bounds height="80.0" width="100.0" x="300.0" y="175.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="officerReview" id="BPMNShape_officerReview">
+        <omgdc:Bounds height="80.0" width="100.0" x="300.0" y="75.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="officerDecision" id="BPMNShape_officerDecision">
+        <omgdc:Bounds height="40.0" width="40.0" x="435.0" y="95.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="approveService" id="BPMNShape_approveService">
+        <omgdc:Bounds height="80.0" width="100.0" x="500.0" y="30.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="rejectService" id="BPMNShape_rejectService">
+        <omgdc:Bounds height="80.0" width="100.0" x="500.0" y="140.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="requestInfo" id="BPMNShape_requestInfo">
+        <omgdc:Bounds height="80.0" width="100.0" x="500.0" y="250.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="waitForInfo" id="BPMNShape_waitForInfo">
+        <omgdc:Bounds height="80.0" width="100.0" x="350.0" y="250.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="notifyApproval" id="BPMNShape_notifyApproval">
+        <omgdc:Bounds height="80.0" width="100.0" x="625.0" y="30.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="notifyRejection" id="BPMNShape_notifyRejection">
+        <omgdc:Bounds height="80.0" width="100.0" x="625.0" y="140.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="endApproved" id="BPMNShape_endApproved">
+        <omgdc:Bounds height="30.0" width="30.0" x="760.0" y="55.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="endRejected" id="BPMNShape_endRejected">
+        <omgdc:Bounds height="30.0" width="30.0" x="760.0" y="165.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</definitions>
       <documentation>
         Review application for ${serviceType} submitted by ${applicantId}.
       </documentation>

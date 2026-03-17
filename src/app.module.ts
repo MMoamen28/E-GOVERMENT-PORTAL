@@ -7,6 +7,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthModule } from './auth/auth.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { ScholarshipModule } from './scholarship/scholarship.module';
+import { FlowableModule } from './flowable/flowable.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { ScholarshipModule } from './scholarship/scholarship.module';
       autoLoadEntities: true,
       synchronize: true,
     }),
+    FlowableModule,
     AuthModule,
     ScholarshipModule,
   ],
