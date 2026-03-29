@@ -1,0 +1,40 @@
+{
+  "contentType": "application/vnd.gorules.decision",
+  "nodes": [
+    {
+      "id": "input",
+      "type": "inputNode",
+      "position": { "x": 0, "y": 0 }
+    },
+    {
+      "id": "nameCheck",
+      "type": "decisionTableNode",
+      "position": { "x": 300, "y": 0 },
+      "content": {
+        "hitPolicy": "first",
+        "inputs": [
+          { "id": "fn", "name": "firstName", "field": "firstName", "type": "string" },
+          { "id": "ln", "name": "lastName", "field": "lastName", "type": "string" }
+        ],
+        "outputs": [
+          { "id": "status", "field": "status", "name": "status", "type": "string" },
+          { "id": "reason", "field": "reason", "name": "reason", "type": "string" }
+        ],
+        "rules": [
+          { "_id": "R01", "firstName": "", "lastName": "", "status": "REJECT", "reason": "First name is required" },
+          { "_id": "R02", "firstName": "valid", "lastName": "", "status": "REJECT", "reason": "Last name is required" },
+          { "_id": "R03", "firstName": "valid", "lastName": "valid", "status": "ACCEPT", "reason": "Name is valid" }
+        ]
+      }
+    },
+    {
+      "id": "output",
+      "type": "outputNode",
+      "position": { "x": 600, "y": 0 }
+    }
+  ],
+  "edges": [
+    { "id": "e1", "sourceId": "input", "targetId": "nameCheck" },
+    { "id": "e2", "sourceId": "nameCheck", "targetId": "output" }
+  ]
+}

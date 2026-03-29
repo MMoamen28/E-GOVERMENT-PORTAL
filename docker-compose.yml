@@ -1,0 +1,143 @@
+services:
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: egov-mailpit
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+    networks:
+      - egov-network
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: egov-postgres
+    command: postgres -c ssl=off
+    environment:
+      POSTGRES_DB: egov_db
+      POSTGRES_USER: egov_user
+      POSTGRES_PASSWORD: egov_pass
+      POSTGRES_HOST_AUTH_METHOD: trust
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - egov-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U egov_user -d egov_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:23.0.0
+    container_name: egov-keycloak
+    command: start-dev --import-realm
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/egov_db
+      KC_DB_USERNAME: egov_user
+      KC_DB_PASSWORD: egov_pass
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_HOSTNAME_STRICT: "false"
+      KC_HTTP_ENABLED: "true"
+    volumes:
+      - ./keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - egov-network
+
+  gorules:
+    image: gorules/brms:latest
+    container_name: egov-gorules
+    ports:
+      - "8090:80"
+    environment:
+      DB_HOST: postgres
+      DB_NAME: gorules_db
+      DB_USER: egov_user
+      DB_PASSWORD: egov_pass
+      DB_SSL_DISABLED: "true"
+      DB_PORT: "5432"
+      EMAIL_ENABLED: "true"
+      EMAIL_HOST: mailpit
+      EMAIL_PORT: "1025"
+      EMAIL_SECURE: "false"
+      EMAIL_FROM: noreply@local.test
+      EMAIL_TLS_REJECT_UNAUTHORIZED: "false"
+      DATABASE_URL: "postgresql://egov_user:egov_pass@postgres:5432/gorules_db?sslmode=disable"
+    volumes:
+      - ./src/gorules/decisions:/app/decisions
+    depends_on:
+      mailpit:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+    networks:
+      - egov-network
+
+  flowable:
+    image: flowable/flowable-rest:6.8.0
+    container_name: egov-flowable
+    ports:
+      - '8082:8080'
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/egov_db
+      - SPRING_DATASOURCE_USERNAME=egov_user
+      - SPRING_DATASOURCE_PASSWORD=egov_pass
+      - SPRING_DATASOURCE_DRIVER_CLASS_NAME=org.postgresql.Driver
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - egov-network
+
+  nestjs-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: egov-nestjs
+    ports:
+      - "3000:3000"
+    environment:
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: egov-portal
+      KEYCLOAK_CLIENT_ID: id-renewal-api
+      GORULES_URL: http://gorules:80
+      FLOWABLE_URL: http://flowable:8080
+      FLOWABLE_USER: rest-admin
+      FLOWABLE_PASS: test
+    depends_on:
+      postgres:
+        condition: service_healthy
+      gorules:
+        condition: service_started
+      flowable:
+        condition: service_started
+    networks:
+      - egov-network
+
+  frontend:
+    build:
+      context: ./frontend-id-namecheck
+      dockerfile: Dockerfile
+    container_name: egov-frontend
+    ports:
+      - "4200:80"
+    depends_on:
+      - nestjs-api
+    networks:
+      - egov-network
+
+volumes:
+  postgres_data:
+
+networks:
+  egov-network:
+    driver: bridge
