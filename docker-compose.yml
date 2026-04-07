@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 
 services:
   egov-postgres:
@@ -26,19 +26,6 @@ services:
     environment:
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: admin
-<<<<<<< HEAD
-      KC_DB: postgres
-      KC_DB_URL: jdbc:postgresql://egov-postgres:5432/egov_db
-      KC_DB_USERNAME: egov_user
-      KC_DB_PASSWORD: egov_pass
-      KC_HOSTNAME_STRICT: "false"
-      KC_HTTP_ENABLED: "true"
-    command: start-dev --import-realm
-=======
-      KC_HOSTNAME: localhost
-      KC_HOSTNAME_STRICT: false
-      KC_HOSTNAME_STRICT_HTTPS: false
->>>>>>> origin/Features/Scholarship
     ports:
       - "8080:8080"
     volumes:
