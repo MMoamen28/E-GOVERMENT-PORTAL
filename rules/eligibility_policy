@@ -33,7 +33,7 @@
             "52b89950-4153-42a0-ba31-5cefaf7890e2": "true",
             "d59e5601-ca28-4261-a69c-a758fcd77c8c": "0",
             "de77c05c-bf27-4a56-bdc9-7208a40272bb": "\"-\"",
-            "febed336-dfbf-439b-bc17-f24a004fa3ce": "d($).month() in [7..10]"
+            "febed336-dfbf-439b-bc17-f24a004fa3ce": "d($).month() in [3, 7..10]"
           },
           {
             "_id": "c65ae7d9-c798-4959-9520-0e6bae955292",
@@ -41,7 +41,7 @@
             "52b89950-4153-42a0-ba31-5cefaf7890e2": "false",
             "d59e5601-ca28-4261-a69c-a758fcd77c8c": "0",
             "de77c05c-bf27-4a56-bdc9-7208a40272bb": "\"Must be a student\"",
-            "febed336-dfbf-439b-bc17-f24a004fa3ce": "d($).month() in [7..10]"
+            "febed336-dfbf-439b-bc17-f24a004fa3ce": "d($).month() in [3, 7..10]"
           },
           {
             "_id": "f99da50e-b488-4187-8943-7a8b6dcf7003",
@@ -49,7 +49,7 @@
             "52b89950-4153-42a0-ba31-5cefaf7890e2": "false",
             "d59e5601-ca28-4261-a69c-a758fcd77c8c": ">= 1",
             "de77c05c-bf27-4a56-bdc9-7208a40272bb": "\"Already applied this year\"",
-            "febed336-dfbf-439b-bc17-f24a004fa3ce": "d($).month() in [7..10]"
+            "febed336-dfbf-439b-bc17-f24a004fa3ce": "d($).month() in [3, 7..10]"
           },
           {
             "_id": "de517a8f-61f7-4fd3-a755-5202b5a62619",
@@ -57,7 +57,7 @@
             "52b89950-4153-42a0-ba31-5cefaf7890e2": "false",
             "d59e5601-ca28-4261-a69c-a758fcd77c8c": "0",
             "de77c05c-bf27-4a56-bdc9-7208a40272bb": "\"Application period closed\"",
-            "febed336-dfbf-439b-bc17-f24a004fa3ce": "d($).month() not in [7..10]"
+            "febed336-dfbf-439b-bc17-f24a004fa3ce": "d($).month() not in [3, 7..10]"
           },
           {
             "_id": "2cc690dc-9c0d-4eff-97c6-d13b554d35d4",
@@ -65,7 +65,7 @@
             "52b89950-4153-42a0-ba31-5cefaf7890e2": "false",
             "d59e5601-ca28-4261-a69c-a758fcd77c8c": ">= 1",
             "de77c05c-bf27-4a56-bdc9-7208a40272bb": "\"Must be a student & Application period closed\"",
-            "febed336-dfbf-439b-bc17-f24a004fa3ce": "d($).month() not in [7..10]"
+            "febed336-dfbf-439b-bc17-f24a004fa3ce": "d($).month() not in [3, 7..10]"
           }
         ],
         "inputs": [

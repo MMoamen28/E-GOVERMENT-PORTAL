@@ -6,13 +6,15 @@ Quick guide to run and test the E-Government Portal (backend, frontend, and API 
 
 ## 1. Start the backend (PostgreSQL + Keycloak + NestJS)
 
-### Step 1: Start Docker services
+### Option A: Run everything in Docker (API + Swagger)
 
 From the **project root**:
 
 ```bash
-docker compose up -d
+docker compose up -d --build
 ```
+
+This starts PostgreSQL, Keycloak, and the NestJS API. Wait ~1 minute for the app to start. API and **Swagger UI** are at http://localhost:3000 and http://localhost:3000/docs .
 
 - **PostgreSQL** → `localhost:5432` (user: `egov_user`, password: `egov_pass`, db: `e_gov_portal`)
 - **Keycloak** → http://localhost:8080 (admin / admin). Realm `e-gov-portal` and test users are auto-imported.
@@ -33,6 +35,7 @@ npm run start:dev
 Wait until you see something like: `Nest application successfully started`.
 
 - **API base** → http://localhost:3000  
+- **Swagger UI** → http://localhost:3000/docs (try endpoints and add Bearer token under "Authorize")  
 - **Public** → http://localhost:3000 (GET `/` returns “Hello World”)  
 - **Protected** → `POST /scholarship/apply`, `GET /scholarship`, `GET /scholarship/:id` require a JWT.
 

@@ -39,6 +39,28 @@ export class ScholarshipApplication {
   @Column({ type: 'int', nullable: true })
   priorityScore: number;
 
+  @Column({ default: false })
+  isOrphan: boolean;
+
+  @Column({ default: true })
+  isStudent: boolean;
+
+  @Column({ default: false })
+  hasID: boolean;
+
+  @Column({ default: false })
+  hasIncomeDoc: boolean;
+
+  @Column({ default: false })
+  hasStudentCert: boolean;
+
+  @Column({ default: false })
+  hasFamilyStatus: boolean;
+
+  /** From GoRules doc validation or eligibility rejection reason */
+  @Column({ nullable: true })
+  reason: string;
+
   /** From GoRules doc validation */
   @Column({ type: 'boolean', nullable: true })
   documentsValid: boolean;

@@ -5,6 +5,6 @@
     "prioritycheck": "rules/priority_rules",
     "levels": "rules/scholarship",
     "policies": "rules/eligibility_policy",
-    "appstatus": null
+    "appstatus": "rules/application_status"
   }
 }

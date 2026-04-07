@@ -1,12 +1,15 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
-import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
+import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
+
+  app.useGlobalFilters(new AllExceptionsFilter());
 
   app.enableCors({
     origin: '*',
@@ -16,15 +19,16 @@ async function bootstrap() {
 
   const config = new DocumentBuilder()
     .setTitle('E-Government Portal API')
-    .setDescription('ID Renewal - Name Check API')
+    .setDescription('API for the E-Government Portal (scholarship, ID renewal, and services)')
     .setVersion('1.0')
-    .addBearerAuth()
+    .addBearerAuth(
+      { type: 'http', scheme: 'bearer', bearerFormat: 'JWT', in: 'header' },
+      'access-token',
+    )
     .build();
-
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api', app, document);
+  SwaggerModule.setup('docs', app, document);
 
-  await app.listen(3000, '0.0.0.0');
+  await app.listen(Number(process.env.PORT ?? 3000), '0.0.0.0');
 }
-
 void bootstrap();

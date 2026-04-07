@@ -18,24 +18,30 @@ export interface JwtPayload {
 export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
   constructor(configService: ConfigService) {
     const issuer = configService.get<string>('keycloak.issuer');
-    const jwksUri = configService.get<string>('keycloak.jwksUri');
+    const internalUrl = configService.get<string>('keycloak.internalUrl');
     const audience = configService.get<string>('keycloak.audience');
+    const jwksUri = configService.get<string>('keycloak.jwksUri');
+
+    console.log('JwtStrategy Config:', { issuer, internalUrl, audience, jwksUri });
+
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      ...(audience ? { audience } : {}),
-      issuer,
+      // Temporarily disabling for Docker debugging
+      // ...(audience && audience.trim() ? { audience: audience.trim() } : {}),
+      // issuer,
       algorithms: ['RS256'],
       secretOrKeyProvider: passportJwtSecret({
         cache: true,
         rateLimit: true,
         jwksRequestsPerMinute: 5,
-        jwksUri: jwksUri ?? `${issuer}/protocol/openid-connect/certs`,
+        jwksUri: jwksUri ?? `${internalUrl}/protocol/openid-connect/certs`,
       }),
     });
   }
 
   validate(payload: JwtPayload) {
+    console.log('JwtStrategy Payload:', JSON.stringify(payload));
     if (!payload.sub) {
       throw new UnauthorizedException('Invalid token payload');
     }

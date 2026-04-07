@@ -117,25 +117,25 @@ document.addEventListener('DOMContentLoaded', () => {
     // Login Form Validation
     const loginForm = document.getElementById('loginForm');
     if (loginForm) {
-        loginForm.addEventListener('submit', (e) => {
+        loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             let isValid = true;
             
-            const nationalId = document.getElementById('nationalId');
-            const password = document.getElementById('password');
+            const usernameInput = document.getElementById('nationalId'); // Reusing ID for username
+            const passwordInput = document.getElementById('password');
             
-            if (!nationalId.value.trim().match(/^\d{10}$/)) {
-                setError(nationalId, 'National ID must be exactly 10 digits');
+            if (usernameInput.value.trim() === '') {
+                setError(usernameInput, 'Username or National ID is required');
                 isValid = false;
             } else {
-                removeError(nationalId);
+                removeError(usernameInput);
             }
             
-            if (password.value.length < 8) {
-                setError(password, 'Password must be at least 8 characters');
+            if (passwordInput.value.length < 6) {
+                setError(passwordInput, 'Password must be at least 6 characters');
                 isValid = false;
             } else {
-                removeError(password);
+                removeError(passwordInput);
             }
             
             if (isValid) {
@@ -143,11 +143,46 @@ document.addEventListener('DOMContentLoaded', () => {
                 const originalText = btn.innerHTML;
                 btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Authenticating...';
                 
-                setTimeout(() => {
+                try {
+                    const response = await fetch('/auth/login', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            username: usernameInput.value.trim(),
+                            password: passwordInput.value,
+                        }),
+                    });
+
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.message || 'Authentication failed');
+                    }
+
+                    const data = await response.json();
+                    
+                    // Decode token to get roles (simplified role detection as in auth.js)
+                    const parts = data.access_token.split('.');
+                    const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+                    
+                    const user = {
+                        sub: payload?.sub,
+                        username: payload?.preferred_username || usernameInput.value.trim(),
+                        roles: payload?.realm_access?.roles || [],
+                    };
+
+                    // Store token and user object using keys consistent with auth.js
+                    localStorage.setItem('egov_scholarship_token', data.access_token);
+                    localStorage.setItem('egov_scholarship_user', JSON.stringify(user));
+
                     alert('Login successful! Redirecting to dashboard...');
-                    btn.innerHTML = originalText;
                     window.location.href = '../index.html';
-                }, 1500);
+                } catch (error) {
+                    console.error('Login error:', error);
+                    alert('Login failed: ' + error.message);
+                    btn.innerHTML = originalText;
+                }
             }
         });
     }

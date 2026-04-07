@@ -9,7 +9,7 @@ services:
       POSTGRES_PASSWORD: egov_pass
       POSTGRES_DB: egov_db
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
@@ -26,6 +26,7 @@ services:
     environment:
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: admin
+<<<<<<< HEAD
       KC_DB: postgres
       KC_DB_URL: jdbc:postgresql://egov-postgres:5432/egov_db
       KC_DB_USERNAME: egov_user
@@ -33,6 +34,11 @@ services:
       KC_HOSTNAME_STRICT: "false"
       KC_HTTP_ENABLED: "true"
     command: start-dev --import-realm
+=======
+      KC_HOSTNAME: localhost
+      KC_HOSTNAME_STRICT: false
+      KC_HOSTNAME_STRICT_HTTPS: false
+>>>>>>> origin/Features/Scholarship
     ports:
       - "8080:8080"
     volumes:
@@ -113,6 +119,75 @@ services:
       - egov-nestjs
     networks:
       - egov-network
+
+  app:
+    build: .
+    container_name: e_gov_app
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      PORT: 3000
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      DATABASE_USER: egov_user
+      DATABASE_PASSWORD: egov_pass
+      DATABASE_NAME: e_gov_portal
+      KEYCLOAK_ISSUER: http://localhost:8080/realms/e-gov-portal
+      KEYCLOAK_INTERNAL_URL: http://keycloak:8080/realms/e-gov-portal
+      KEYCLOAK_JWKS_URI: http://keycloak:8080/realms/e-gov-portal/protocol/openid-connect/certs
+      FLOWABLE_URL: http://flowable-web/flowable-rest/service
+      FLOWABLE_USER: admin
+      FLOWABLE_PASS: test
+    depends_on:
+      - postgres
+      - keycloak
+      - flowable-web
+
+  flowable:
+    image: flowable/flowable-rest:6.8.0
+    container_name: e_gov_flowable
+    restart: always
+    environment:
+      spring.datasource.url: jdbc:postgresql://postgres:5432/e_gov_portal
+      spring.datasource.username: egov_user
+      spring.datasource.password: egov_pass
+      spring.datasource.driver-class-name: org.postgresql.Driver
+      flowable.rest.app.admin.user-id: admin
+      flowable.rest.app.admin.password: test
+      flowable.common.app.idm-url: http://flowable:8080/flowable-idm
+    depends_on:
+      - postgres
+
+  flowable-web:
+    image: nginx:latest
+    container_name: e_gov_flowable_web
+    restart: always
+    ports:
+      - "8090:80"
+    volumes:
+      - ./flowable/index.html:/usr/share/nginx/html/index.html:ro
+      - ./flowable/openapi.yaml:/usr/share/nginx/html/openapi.yaml:ro
+      - ./flowable/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - flowable
+
+  swagger-ui:
+    image: swaggerapi/swagger-ui:v5.10.0
+    container_name: e_gov_swagger_ui
+    restart: always
+    ports:
+      - "8091:8080"
+    environment:
+      SWAGGER_JSON: /swagger/openapi.yaml
+      BASE_URL: /
+      SWAGGER_UI_BUNDLE_JS: /swagger-ui-bundle.js
+      SWAGGER_UI_STANDALONE_PRESET_JS: /swagger-ui-standalone-preset.js
+    volumes:
+      - ./flowable/openapi.yaml:/swagger/openapi.yaml:ro
+    depends_on:
+      - flowable-web
+      - app
 
 volumes:
   postgres_data:

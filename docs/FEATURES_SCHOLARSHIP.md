@@ -24,6 +24,11 @@ This branch is the **main integration branch** for the scholarship feature. Ever
 - [ ] PostgreSQL connection configured in `app.module.ts` (already done)
 - [ ] TypeORM entities/migrations in repo so DB is ready after `npm run start`
 
+**Where do APIs live?**
+
+- **This branch (Features/Scholarship):** Only the **scholarship** REST API and the **app root** (e.g. `GET /`, `POST /scholarship/apply`, `GET /scholarship`, `GET /scholarship/:id`). No extra public APIs like app status, doc validation, or health in this branch unless you add them here for everyone.
+- **Sub-branches:** GoRules **rules** (document_validation, priority_rules, eligibility_policy, etc.) are implemented in sub-branches and merged into `rules/`. The scholarship **service** in this branch calls those rules (via placeholders until merged). If a team owns a full sub-feature (e.g. a separate “doc validation API” or “application status API”), those **new endpoints** are added in that sub-branch and merged here when ready.
+
 ---
 
 ## 3. PostgreSQL
