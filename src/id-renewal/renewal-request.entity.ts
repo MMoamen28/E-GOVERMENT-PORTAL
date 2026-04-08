@@ -24,8 +24,17 @@ export class RenewalRequestEntity {
   @Column({ type: 'varchar', default: 'PENDING' })
   status: string;
 
+  @Column({ type: 'uuid', nullable: true })
+  citizenId: string | null;
+
   @Column({ type: 'varchar', nullable: true })
   workflowId: string | null;
+
+  @Column({ type: 'varchar', nullable: true })
+  flowableTaskId: string | null;
+
+  @Column({ type: 'varchar', nullable: true })
+  flowableProcessInstanceId: string | null;
 
   @Column({ type: 'text', nullable: true })
   rejectionReason: string | null;

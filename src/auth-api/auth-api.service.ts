@@ -1,6 +1,6 @@
 import { Injectable, HttpException, HttpStatus, Logger } from '@nestjs/common';
 import axios from 'axios';
-import { LoginDto } from './dto/login.dto';
+import { AuthApiLoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 
 export interface KeycloakTokenResponse {
@@ -27,9 +27,10 @@ export class AuthApiService {
   private readonly realm = process.env.KEYCLOAK_REALM || 'egov-portal';
   private readonly clientId =
     process.env.KEYCLOAK_CLIENT_ID || 'id-renewal-api';
-  private readonly clientSecret = 'xPnisDToolKxJGD9GRsBx1Tn3G0zcbKD';
+  private readonly clientSecret =
+    process.env.KEYCLOAK_CLIENT_SECRET || 'xPnisDToolKxJGD9GRsBx1Tn3G0zcbKD';
 
-  async login(dto: LoginDto): Promise<KeycloakTokenResponse> {
+  async login(dto: AuthApiLoginDto): Promise<KeycloakTokenResponse> {
     const params = new URLSearchParams({
       client_id: this.clientId,
       client_secret: this.clientSecret,

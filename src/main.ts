@@ -19,7 +19,9 @@ async function bootstrap() {
 
   const config = new DocumentBuilder()
     .setTitle('E-Government Portal API')
-    .setDescription('API for the E-Government Portal (scholarship, ID renewal, and services)')
+    .setDescription(
+      'API for the E-Government Portal (scholarship, ID renewal, and services)',
+    )
     .setVersion('1.0')
     .addBearerAuth(
       { type: 'http', scheme: 'bearer', bearerFormat: 'JWT', in: 'header' },

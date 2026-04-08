@@ -1,17 +1,16 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { ScholarshipApplication } from './scholarship.entity';
+import { ScholarshipApplicationEntity } from './scholarship.entity';
 import { ScholarshipService } from './scholarship.service';
 import { ScholarshipController } from './scholarship.controller';
 import { FlowableModule } from '../flowable/flowable.module';
-
-import { PoliciesModule } from '../policies/policies.module';
+import { GoRulesModule } from '../gorules/gorules.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([ScholarshipApplication]),
+    TypeOrmModule.forFeature([ScholarshipApplicationEntity]),
     FlowableModule,
-    PoliciesModule,
+    GoRulesModule,
   ],
   controllers: [ScholarshipController],
   providers: [ScholarshipService],

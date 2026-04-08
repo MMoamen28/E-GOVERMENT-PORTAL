@@ -1,4 +1,14 @@
-import { ApplicationStatus } from './scholarship.entity';
+/**
+ * Status values for scholarship applications
+ */
+enum ApplicationStatus {
+  PENDING = 'PENDING',
+  APPROVED = 'APPROVED',
+  REJECTED = 'REJECTED',
+  UNDER_REVIEW = 'UNDER_REVIEW',
+  SUBMITTED = 'SUBMITTED',
+}
+
 import { StatusAction } from './dto/update-status.dto';
 
 /**

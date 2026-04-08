@@ -11,13 +11,16 @@ export class GoRulesService {
   private decision: any;
 
   constructor() {
-    
     this.engine = new ZenEngine();
-     
-    const rulePath = path.join(process.cwd(), 'src', 'business-license', 'business-rules.json');
+
+    const rulePath = path.join(
+      process.cwd(),
+      'src',
+      'business-license',
+      'business-rules.json',
+    );
     const ruleContent = fs.readFileSync(rulePath);
-    
-    
+
     this.decision = this.engine.createDecision(ruleContent);
   }
 
@@ -25,23 +28,19 @@ export class GoRulesService {
     try {
       const payload = {
         businessType: dto.businessType,
-        capital: dto.declaredCapital, 
       };
 
       this.logger.log(`Evaluating GoRules with: ${JSON.stringify(payload)}`);
 
-      
       const evaluation = await this.decision.evaluate(payload);
       const result = evaluation.result;
 
       this.logger.log(`GoRules Result: ${JSON.stringify(result)}`);
 
-      
       return {
         requireHealthReview: result?.requireHealthReview || false,
         requireFinanceReview: result?.requireFinanceReview || false,
       };
-
     } catch (error) {
       this.logger.error('Error evaluating GoRules', error.message);
       return { requireHealthReview: false, requireFinanceReview: false };

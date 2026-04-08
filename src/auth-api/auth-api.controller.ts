@@ -7,9 +7,10 @@ import {
   Request,
 } from '@nestjs/common';
 import { AuthApiService } from './auth-api.service';
-import { LoginDto } from './dto/login.dto';
+import { AuthApiLoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 
 interface RequestWithUser extends Request {
@@ -23,7 +24,7 @@ export class AuthApiController {
 
   @Post('login')
   @ApiOperation({ summary: 'Login and get token' })
-  login(@Body() loginDto: LoginDto) {
+  login(@Body() loginDto: AuthApiLoginDto) {
     return this.authApiService.login(loginDto);
   }
 
@@ -34,7 +35,7 @@ export class AuthApiController {
   }
 
   @Get('me')
-  @UseGuards(RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get current user info from token' })
   getProfile(@Request() req: RequestWithUser) {

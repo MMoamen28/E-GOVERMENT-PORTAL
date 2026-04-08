@@ -5,8 +5,7 @@ import {
   Param,
   Body,
   UseGuards,
-  HttpCode,
-  HttpStatus,
+  Request,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -20,6 +19,10 @@ import { CompleteTaskDto } from './dto/complete-task.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
+
+interface RequestWithUser extends Request {
+  user: Record<string, unknown>;
+}
 
 @ApiTags('ID Renewal')
 @ApiBearerAuth()
@@ -45,11 +48,25 @@ export class IdRenewalController {
   @ApiResponse({ status: 201, description: 'Request submitted successfully' })
   @ApiResponse({ status: 422, description: 'Name validation failed' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  async submitRequest(@Body() dto: CreateRenewalDto) {
-    return this.idRenewalService.submitRequest(dto);
+  async submitRequest(
+    @Body() dto: CreateRenewalDto,
+    @Request() req: RequestWithUser,
+  ) {
+    const citizenId = (req.user?.sub as string) || '';
+    return this.idRenewalService.submitRequest(dto, citizenId);
   }
 
-  @Get('tasks')
+  @Get('my-requests')
+  @Roles('citizen')
+  @ApiOperation({ summary: "Get logged-in citizen's ID renewal requests" })
+  @ApiResponse({ status: 200, description: "List of citizen's requests" })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async getMyRequests(@Request() req: RequestWithUser) {
+    const citizenId = (req.user?.sub as string) || '';
+    return this.idRenewalService.getMyRequests(citizenId);
+  }
+
+  @Get('supervisor/tasks')
   @Roles('supervisor')
   @ApiOperation({ summary: 'Get all pending supervisor review tasks' })
   @ApiResponse({ status: 200, description: 'List of pending tasks' })
@@ -60,7 +77,6 @@ export class IdRenewalController {
 
   @Post('tasks/:taskId/complete')
   @Roles('supervisor')
-  @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Approve or reject a renewal request' })
   @ApiResponse({ status: 200, description: 'Task completed, request updated' })
   @ApiResponse({ status: 404, description: 'Task or request not found' })

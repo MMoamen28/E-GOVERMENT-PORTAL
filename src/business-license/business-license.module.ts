@@ -2,15 +2,18 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { BusinessLicenseController } from './business-license.controller';
 import { BusinessLicenseService } from './business-license.service';
-import { BusinessLicense } from './entities/business-license.entity';
-import { GoRulesService } from './gorules.service';
-import { FlowableService } from './flowable.service';
-import { FlowableTaskService } from './flowable-task.service';
+import { BusinessLicenseEntity } from './entities/business-license.entity';
+import { GoRulesModule } from '../gorules/gorules.module';
+import { FlowableModule } from '../flowable/flowable.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([BusinessLicense])],
+  imports: [
+    TypeOrmModule.forFeature([BusinessLicenseEntity]),
+    GoRulesModule,
+    FlowableModule,
+  ],
   controllers: [BusinessLicenseController],
-  providers: [BusinessLicenseService, GoRulesService, FlowableService, FlowableTaskService],
-  exports: [BusinessLicenseService, GoRulesService, FlowableService, FlowableTaskService],
+  providers: [BusinessLicenseService],
+  exports: [BusinessLicenseService],
 })
 export class BusinessLicenseModule {}

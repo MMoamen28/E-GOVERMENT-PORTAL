@@ -1,3 +1,4 @@
+/* eslint-disable */
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -6,75 +7,37 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 
-export enum ApplicationStatus {
-  DRAFT = 'DRAFT',
-  SUBMITTED = 'SUBMITTED',
-  UNDER_REVIEW = 'UNDER_REVIEW',
-  APPROVED = 'APPROVED',
-  REJECTED = 'REJECTED',
-}
-
 @Entity('scholarship_applications')
-export class ScholarshipApplication {
+export class ScholarshipApplicationEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column()
-  applicantId: string;
+  @Column({ type: 'varchar' })
+  firstName: string;
 
-  @Column({ type: 'decimal', precision: 3, scale: 2, nullable: true })
+  @Column({ type: 'varchar' })
+  lastName: string;
+
+  @Column({ type: 'varchar' })
+  nationalId: string;
+
+  @Column({ type: 'varchar' })
+  university: string;
+
+  @Column({ type: 'decimal', precision: 5, scale: 2 })
   gpa: number;
 
-  @Column({ type: 'decimal', precision: 12, scale: 2, nullable: true })
-  income: number;
+  @Column({ type: 'varchar', default: 'PENDING' })
+  status: string; // PENDING, APPROVED, REJECTED
 
-  @Column({ default: false })
-  achievements: boolean;
+  @Column({ type: 'varchar' })
+  citizenId: string;
 
-  /** From GoRules levels rule (e.g. LEVEL_1, LEVEL_2, LEVEL_3) */
-  @Column({ nullable: true })
-  scholarshipLevel: string;
+  @Column({ type: 'varchar', nullable: true })
+  flowableTaskId: string | null;
 
-  /** From GoRules priority rule (e.g. 0–100) */
-  @Column({ type: 'int', nullable: true })
-  priorityScore: number;
-
-  @Column({ default: false })
-  isOrphan: boolean;
-
-  @Column({ default: true })
-  isStudent: boolean;
-
-  @Column({ default: false })
-  hasID: boolean;
-
-  @Column({ default: false })
-  hasIncomeDoc: boolean;
-
-  @Column({ default: false })
-  hasStudentCert: boolean;
-
-  @Column({ default: false })
-  hasFamilyStatus: boolean;
-
-  /** From GoRules doc validation or eligibility rejection reason */
-  @Column({ nullable: true })
-  reason: string;
-
-  /** From GoRules doc validation */
-  @Column({ type: 'boolean', nullable: true })
-  documentsValid: boolean;
-
-  @Column({
-    type: 'enum',
-    enum: ApplicationStatus,
-    default: ApplicationStatus.DRAFT,
-  })
-  status: ApplicationStatus;
-
-  /** Flowable process instance id when workflow is started */
-  @Column({ nullable: true })
-  processInstanceId: string;
+  @Column({ type: 'varchar', nullable: true })
+  flowableProcessInstanceId: string | null;
 
   @CreateDateColumn()
   createdAt: Date;

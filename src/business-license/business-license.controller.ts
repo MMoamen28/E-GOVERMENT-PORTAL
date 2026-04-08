@@ -1,37 +1,93 @@
-import { Controller, Get, Post, Body, Param } from '@nestjs/common';
-import { Roles, AuthenticatedUser } from 'nest-keycloak-connect';
+import {
+  Controller,
+  Post,
+  Get,
+  Param,
+  Patch,
+  Body,
+  UseGuards,
+  Request,
+} from '@nestjs/common';
+import {
+  ApiTags,
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse,
+} from '@nestjs/swagger';
 import { BusinessLicenseService } from './business-license.service';
 import { CreateBusinessLicenseDto } from './dto/create-business-license.dto';
+import { CompleteBusinessLicenseTaskDto } from './dto/complete-business-license.dto';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
 
-@Controller('business-licenses')
+interface RequestWithUser extends Request {
+  user: Record<string, unknown>;
+}
+
+@ApiTags('Business License')
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Controller('business-license')
 export class BusinessLicenseController {
-  constructor(private readonly licenseService: BusinessLicenseService) {}
+  constructor(
+    private readonly businessLicenseService: BusinessLicenseService,
+  ) {}
 
-  // POST: /business-licenses
   @Post()
-  @Roles({ roles: ['realm:CITIZEN'] }) // Only Citizens can submit applications
-  async create(
-    @Body() createDto: CreateBusinessLicenseDto, 
-    @AuthenticatedUser() user: any // Keycloak injects the decoded JWT token here!
+  @Roles('citizen')
+  @ApiOperation({ summary: 'Submit a new business license request' })
+  @ApiResponse({ status: 201, description: 'Request submitted successfully' })
+  @ApiResponse({ status: 422, description: 'Name validation failed' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async submitRequest(
+    @Body() dto: CreateBusinessLicenseDto,
+    @Request() req: RequestWithUser,
   ) {
-    // We replace the mock ID with the actual User ID (sub) from Keycloak
-    const realOwnerId = user.sub; 
-    
-    return await this.licenseService.create(createDto, realOwnerId);
+    const citizenId = (req.user?.sub as string) || '';
+    return this.businessLicenseService.submitRequest(dto, citizenId);
   }
 
-  // GET: /business-licenses
-  @Get()
-  @Roles({ roles: ['realm:OFFICER', 'realm:SUPERVISOR'] }) // Only Gov workers can view the list
-  async findAll() {
-    return await this.licenseService.findAll();
+  @Get('my-requests')
+  @Roles('citizen')
+  @ApiOperation({
+    summary: "Get logged-in citizen's business license requests",
+  })
+  @ApiResponse({ status: 200, description: "List of citizen's requests" })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  getMyRequests(@Request() req: RequestWithUser) {
+    const citizenId = (req.user?.sub as string) || '';
+    return this.businessLicenseService.getMyRequests(citizenId);
   }
 
-  // GET: /business-licenses/uuid-goes-here
+  @Get('supervisor/tasks')
+  @Roles('supervisor')
+  @ApiOperation({ summary: 'Get all pending supervisor review tasks' })
+  @ApiResponse({ status: 200, description: 'List of pending tasks' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  getSupervisorTasks() {
+    return this.businessLicenseService.getSupervisorTasks();
+  }
+
+  @Patch(':id/complete')
+  @Roles('supervisor')
+  @ApiOperation({ summary: 'Approve or reject a business license request' })
+  @ApiResponse({ status: 200, description: 'Task completed, request updated' })
+  @ApiResponse({ status: 404, description: 'Request not found' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async completeTask(
+    @Param('id') id: string,
+    @Body() dto: CompleteBusinessLicenseTaskDto,
+  ) {
+    return this.businessLicenseService.completeTask(id, dto);
+  }
+
   @Get(':id')
-  @Roles({ roles: ['realm:CITIZEN', 'realm:OFFICER', 'realm:SUPERVISOR']}) // Mixed access
-  async findOne(@Param('id') id: string, @AuthenticatedUser() user: any) {
-    // Future improvement: If user role is CITIZEN, verify user.sub === license.ownerId
-    return await this.licenseService.findOne(id);
+  @Roles('citizen', 'supervisor')
+  @ApiOperation({ summary: 'Get a specific business license request' })
+  @ApiResponse({ status: 200, description: 'Request found' })
+  @ApiResponse({ status: 404, description: 'Request not found' })
+  findOne(@Param('id') id: string) {
+    return this.businessLicenseService.findOne(id);
   }
 }

@@ -24,7 +24,10 @@ export class IdRenewalService {
     await this.flowableService.deployProcess();
   }
 
-  async submitRequest(dto: CreateRenewalDto): Promise<RenewalRequestEntity> {
+  async submitRequest(
+    dto: CreateRenewalDto,
+    citizenId: string,
+  ): Promise<RenewalRequestEntity> {
     const validation = this.goRulesService.validateName(
       dto.firstName,
       dto.lastName,
@@ -38,6 +41,7 @@ export class IdRenewalService {
       firstName: dto.firstName,
       lastName: dto.lastName,
       nationalId: dto.nationalId,
+      citizenId,
       status: 'PENDING',
     });
 
@@ -51,6 +55,7 @@ export class IdRenewalService {
         saved.nationalId,
       );
       saved.workflowId = process.id;
+      saved.flowableProcessInstanceId = process.id;
       await this.renewalRepository.save(saved);
     } catch {
       saved.workflowId = 'workflow-unavailable';
@@ -70,6 +75,13 @@ export class IdRenewalService {
       throw new NotFoundException(`Renewal request '${id}' not found`);
     }
     return request;
+  }
+
+  async getMyRequests(citizenId: string): Promise<RenewalRequestEntity[]> {
+    return this.renewalRepository.find({
+      where: { citizenId },
+      order: { submittedAt: 'DESC' },
+    });
   }
 
   async getSupervisorTasks(): Promise<FlowableTask[]> {

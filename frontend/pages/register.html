@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>E-Government Portal | Register</title>
+    <link rel="stylesheet" href="../css/style.css" />
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        background-color: var(--bg-main);
+      }
+      .footer {
+        margin-top: auto;
+      }
+      .page-wrapper {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page-wrapper">
+      <nav class="navbar solid" id="navbar">
+        <div class="nav-container">
+          <a href="../index.html" class="logo"
+            ><i class="fas fa-landmark"></i> E-Gov Portal</a
+          >
+          <div class="nav-menu" id="nav-menu">
+            <a href="../index.html" class="nav-link">Home</a>
+            <a href="services.html" class="nav-link">Services</a>
+            <a href="../../frontend-id-namecheck/pages/login.html" class="nav-link">Login</a>
+          </div>
+          <div class="nav-toggle" id="nav-toggle">
+            <i class="fas fa-bars"></i>
+          </div>
+        </div>
+      </nav>
+
+      <header
+        class="page-header"
+        style="padding-top: 80px; padding-bottom: 5rem"
+      >
+        <div class="container fade-up">
+          <h1>Create Account</h1>
+          <p>Join the digital citizen portal.</p>
+        </div>
+      </header>
+
+      <section class="section" style="padding-top: 0; flex: 1">
+        <div class="container">
+          <div class="form-container fade-up delay-1">
+            <div class="form-wrapper">
+              <h2 style="margin-bottom: 0.5rem">Citizen Registration</h2>
+              <p style="color: var(--text-light); margin-bottom: 2rem">
+                Create a portal account to access digital services.
+              </p>
+
+              <div
+                id="alertBox"
+                class="alert alert-error"
+                style="display: none; margin-bottom: 1rem"
+              ></div>
+
+              <form id="registerForm" novalidate>
+                <div class="input-group">
+                  <label for="firstName" class="form-label">First Name</label>
+                  <input
+                    type="text"
+                    id="firstName"
+                    class="form-control"
+                    placeholder="Enter your first name"
+                  />
+                  <span class="error-message">First name is required.</span>
+                </div>
+
+                <div class="input-group">
+                  <label for="lastName" class="form-label">Last Name</label>
+                  <input
+                    type="text"
+                    id="lastName"
+                    class="form-control"
+                    placeholder="Enter your last name"
+                  />
+                  <span class="error-message">Last name is required.</span>
+                </div>
+
+                <div class="input-group">
+                  <label for="username" class="form-label">Username</label>
+                  <input
+                    type="text"
+                    id="username"
+                    class="form-control"
+                    placeholder="e.g. applicant1"
+                  />
+                  <span class="error-message">Username is required.</span>
+                </div>
+
+                <div class="input-group">
+                  <label for="email" class="form-label">Email</label>
+                  <input
+                    type="email"
+                    id="email"
+                    class="form-control"
+                    placeholder="example@email.com"
+                  />
+                  <span class="error-message">Valid email is required.</span>
+                </div>
+
+                <div class="input-group">
+                  <label for="password" class="form-label">Password</label>
+                  <input
+                    type="password"
+                    id="password"
+                    class="form-control"
+                    placeholder="At least 8 characters"
+                  />
+                  <span class="error-message">Password is required.</span>
+                </div>
+
+                <button
+                  type="submit"
+                  class="btn btn-primary btn-block"
+                  id="regBtn"
+                >
+                  Register
+                </button>
+              </form>
+
+              <div
+                id="successCard"
+                style="display: none; text-align: center; margin-top: 1rem"
+              >
+                <i
+                  class="fas fa-check-circle"
+                  style="font-size: 3rem; color: #059669; margin-bottom: 1rem"
+                ></i>
+                <h2>Account Created</h2>
+                <p>You can now log in with your new account.</p>
+                <a
+                  href="../../frontend-id-namecheck/pages/login.html"
+                  class="btn btn-primary"
+                  style="margin-top: 1rem"
+                  >Go to Login</a
+                >
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <footer class="footer" style="padding-top: 2rem">
+        <div class="container">
+          <div class="footer-bottom" style="border-top: none">
+            <p>&copy; 2026 E-Government Digital Portal. All rights reserved.</p>
+          </div>
+        </div>
+      </footer>
+    </div>
+
+    <script src="../js/script.js?v=3"></script>
+    <script>
+      function validateEmail(email) {
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+      }
+
+      function setFieldError(fieldId, message) {
+        const input = document.getElementById(fieldId);
+        const error = input?.parentElement?.querySelector('.error-message');
+        if (error) {
+          error.textContent = message;
+          error.style.display = message ? 'block' : 'none';
+        }
+        if (input) {
+          input.classList.toggle('invalid', !!message);
+        }
+      }
+
+      document
+        .getElementById('registerForm')
+        .addEventListener('submit', async function (event) {
+          event.preventDefault();
+
+          const alertBox = document.getElementById('alertBox');
+          const btn = document.getElementById('regBtn');
+          const firstName = document.getElementById('firstName').value.trim();
+          const lastName = document.getElementById('lastName').value.trim();
+          const username = document.getElementById('username').value.trim();
+          const email = document.getElementById('email').value.trim();
+          const password = document.getElementById('password').value;
+
+          alertBox.style.display = 'none';
+          setFieldError(
+            'firstName',
+            firstName ? '' : 'First name is required.',
+          );
+          setFieldError('lastName', lastName ? '' : 'Last name is required.');
+          setFieldError('username', username ? '' : 'Username is required.');
+          setFieldError(
+            'email',
+            email && validateEmail(email) ? '' : 'Valid email is required.',
+          );
+          setFieldError(
+            'password',
+            password.length >= 8
+              ? ''
+              : 'Password must be at least 8 characters.',
+          );
+
+          if (
+            !firstName ||
+            !lastName ||
+            !username ||
+            !email ||
+            !validateEmail(email) ||
+            password.length < 8
+          ) {
+            return;
+          }
+
+          btn.disabled = true;
+          btn.innerText = 'Creating account...';
+
+          try {
+            const response = await fetch(
+              'http://localhost:3000/auth/register',
+              {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  firstName,
+                  lastName,
+                  username,
+                  email,
+                  password,
+                }),
+              },
+            );
+
+            if (!response.ok) {
+              const error = await response.json().catch(() => ({}));
+              throw new Error(error.message || 'Registration failed');
+            }
+
+            document.getElementById('registerForm').style.display = 'none';
+            document.getElementById('successCard').style.display = 'block';
+          } catch (error) {
+            alertBox.textContent =
+              error.message ||
+              'Cannot connect to server. Check if NestJS is running.';
+            alertBox.style.display = 'block';
+          } finally {
+            btn.disabled = false;
+            btn.innerText = 'Register';
+          }
+        });
+    </script>
+  </body>
+</html>

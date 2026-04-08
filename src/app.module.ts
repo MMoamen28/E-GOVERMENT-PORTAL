@@ -18,19 +18,24 @@ import { RequestLoggerMiddleware } from './common/middleware/request-logger.midd
 @Module({
   imports: [
     ServeStaticModule.forRoot({
-      rootPath: join(__dirname, '..', 'frontend'),
+      rootPath: join(process.cwd(), 'frontend'),
       serveRoot: '/',
       serveStaticOptions: {
         extensions: ['html'],
+        index: 'index.html',
       },
     }),
     ConfigModule.forRoot({ isGlobal: true }),
     TypeOrmModule.forRoot({
       type: 'postgres',
       host: process.env.DB_HOST ?? process.env.DATABASE_HOST ?? 'localhost',
-      port: parseInt(process.env.DB_PORT ?? process.env.DATABASE_PORT ?? '5432', 10),
+      port: parseInt(
+        process.env.DB_PORT ?? process.env.DATABASE_PORT ?? '5432',
+        10,
+      ),
       username: process.env.DB_USER ?? process.env.DATABASE_USER ?? 'egov_user',
-      password: process.env.DB_PASS ?? process.env.DATABASE_PASSWORD ?? 'egov_pass',
+      password:
+        process.env.DB_PASS ?? process.env.DATABASE_PASSWORD ?? 'egov_pass',
       database: process.env.DB_NAME ?? process.env.DATABASE_NAME ?? 'egov_db',
       autoLoadEntities: true,
       synchronize: true,

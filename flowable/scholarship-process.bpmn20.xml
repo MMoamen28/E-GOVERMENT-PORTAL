@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:flowable="http://flowable.org/bpmn" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:omgdc="http://www.omg.org/spec/DD/20100524/DC" xmlns:omgdi="http://www.omg.org/spec/DD/20100524/DI" typeLanguage="http://www.w3.org/2001/XMLSchema" expressionLanguage="http://www.w3.org/1999/XPath" targetNamespace="http://www.flowable.org/processdef">
+  <process id="scholarship-process" name="Scholarship Application Review" isExecutable="true">
+    <startEvent id="startEvent" name="Application Submitted"></startEvent>
+    <sequenceFlow id="flow1" sourceRef="startEvent" targetRef="reviewTask"></sequenceFlow>
+
+    <userTask id="reviewTask" name="Review Scholarship Application" flowable:candidateGroups="supervisor">
+      <documentation>Review scholarship application for applicant</documentation>
+    </userTask>
+    <sequenceFlow id="flow2" sourceRef="reviewTask" targetRef="decisionGateway"></sequenceFlow>
+
+    <exclusiveGateway id="decisionGateway" name="Approval Decision"></exclusiveGateway>
+    
+    <sequenceFlow id="approveFlow" sourceRef="decisionGateway" targetRef="approvedEvent" name="Approved">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${action == 'APPROVED'}]]></conditionExpression>
+    </sequenceFlow>
+    
+    <sequenceFlow id="rejectFlow" sourceRef="decisionGateway" targetRef="rejectedEvent" name="Rejected">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${action == 'REJECTED'}]]></conditionExpression>
+    </sequenceFlow>
+
+    <endEvent id="approvedEvent" name="Application Approved"></endEvent>
+    <endEvent id="rejectedEvent" name="Application Rejected"></endEvent>
+  </process>
+
+  <bpmndi:BPMNDiagram id="BPMNDiagram_scholarship">
+    <bpmndi:BPMNPlane id="BPMNPlane_scholarship" bpmnElement="scholarship-process">
+      <bpmndi:BPMNShape id="BPMNShape_startEvent" bpmnElement="startEvent">
+        <omgdc:Bounds height="30" width="30" x="100" y="160"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_reviewTask" bpmnElement="reviewTask">
+        <omgdc:Bounds height="80" width="100" x="175" y="135"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_decisionGateway" bpmnElement="decisionGateway">
+        <omgdc:Bounds height="40" width="40" x="325" y="155"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_approvedEvent" bpmnElement="approvedEvent">
+        <omgdc:Bounds height="28" width="28" x="425" y="100"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_rejectedEvent" bpmnElement="rejectedEvent">
+        <omgdc:Bounds height="28" width="28" x="425" y="210"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="BPMNEdge_flow1" bpmnElement="flow1">
+        <omgdi:waypoint x="130" y="175"></omgdi:waypoint>
+        <omgdi:waypoint x="175" y="175"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_flow2" bpmnElement="flow2">
+        <omgdi:waypoint x="275" y="175"></omgdi:waypoint>
+        <omgdi:waypoint x="325" y="175"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_approveFlow" bpmnElement="approveFlow">
+        <omgdi:waypoint x="345" y="155"></omgdi:waypoint>
+        <omgdi:waypoint x="345" y="114"></omgdi:waypoint>
+        <omgdi:waypoint x="425" y="114"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_rejectFlow" bpmnElement="rejectFlow">
+        <omgdi:waypoint x="345" y="195"></omgdi:waypoint>
+        <omgdi:waypoint x="345" y="224"></omgdi:waypoint>
+        <omgdi:waypoint x="425" y="224"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</definitions>

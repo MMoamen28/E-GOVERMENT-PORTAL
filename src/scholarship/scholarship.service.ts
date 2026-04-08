@@ -1,254 +1,122 @@
 import {
   Injectable,
   NotFoundException,
-  BadRequestException,
+  UnprocessableEntityException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import {
-  ScholarshipApplication,
-  ApplicationStatus,
-} from './scholarship.entity';
-import { getNextStatusFromRule } from './application-status.rules';
-import { StatusAction } from './dto/update-status.dto';
-import { ZenEngine } from '@gorules/zen-engine';
-import * as fs from 'fs/promises';
-import * as path from 'path';
-import { FlowableService } from '../flowable/flowable.service';
-
-import { SubmitApplicationDto } from './dto/submit-application.dto';
-import { PoliciesService } from '../policies/policies.service';
+import { GoRulesService } from '../gorules/gorules.service';
+import { FlowableService, FlowableTask } from '../flowable/flowable.service';
+import { SubmitScholarshipDto } from './dto/submit-scholarship.dto';
+import { CompleteScholarshipTaskDto } from './dto/complete-scholarship-task.dto';
+import { ScholarshipApplicationEntity } from './scholarship.entity';
 
 @Injectable()
 export class ScholarshipService {
   constructor(
-    @InjectRepository(ScholarshipApplication)
-    private readonly applicationRepo: Repository<ScholarshipApplication>,
+    @InjectRepository(ScholarshipApplicationEntity)
+    private readonly scholarshipRepository: Repository<ScholarshipApplicationEntity>,
+    private readonly goRulesService: GoRulesService,
     private readonly flowableService: FlowableService,
-    private readonly policiesService: PoliciesService,
   ) {}
 
-  /**
-   * Submit a scholarship application.
-   * 1. Validate policies (seasonal window, student status, 1 per year).
-   * 2. Status is always SUBMITTED so an officer can move it to UNDER_REVIEW then APPROVE/REJECT (rules/application_status).
-   * 3. Rules run for level, priority, document reason, and eligibility note (stored as reason for officer only).
-   */
-  async submitApplication(
-    dto: SubmitApplicationDto,
-  ): Promise<ScholarshipApplication> {
-    // Single eligibility check using rules/eligibility_policy (isStudent, applicationsThisYear, applicationDate)
-    const policyResult = await this.policiesService.evaluatePolicy({
-      applicantId: dto.applicantId,
-      isStudent: dto.isStudent,
-    });
-
-    if (!policyResult.eligible) {
-      throw new BadRequestException(`Policy rejection: ${policyResult.reason}`);
-    }
-
-    const [priorityScore, scholarshipLevel, docStatus] = await Promise.all([
-      this.evaluatePriority(dto),
-      this.evaluateLevels(dto),
-      this.evaluateDocValidation(dto),
-    ]);
-
-    const reasonParts: string[] = [];
-    if (docStatus.reason && docStatus.reason !== '-' && !docStatus.valid) {
-      reasonParts.push(this.normalizeReason(docStatus.reason));
-    }
-    // Eligibility reason from policy (rules/eligibility_policy) – only store when not "-"
-    if (policyResult.reason && policyResult.reason !== '-') {
-      reasonParts.push(this.normalizeReason(policyResult.reason));
-    }
-    const reason = reasonParts.length > 0 ? reasonParts.join('. ') : null;
-
-    const savedApp = await this.saveApplication(dto, {
-      status: ApplicationStatus.SUBMITTED,
-      documentsValid: docStatus.valid,
-      reason: reason ?? undefined,
-      priorityScore,
-      scholarshipLevel,
-    });
-
-    try {
-      const processInstance = await this.flowableService.startProcessInstance('scholarshipProcess', {
-        applicationId: savedApp.id,
-        applicantId: savedApp.applicantId,
-        priorityScore: savedApp.priorityScore,
-        scholarshipLevel: savedApp.scholarshipLevel,
-      });
-      savedApp.processInstanceId = processInstance.id;
-      return this.applicationRepo.save(savedApp);
-    } catch (error) {
-      console.error('Failed to start Flowable process:', error);
-      // We still return the saved application, but it might not have a process instance id
-      return savedApp;
-    }
-  }
-
-  private normalizeReason(r: string): string {
-    if (!r || typeof r !== 'string') return '';
-    return r.replace(/^"|"$/g, '').trim();
-  }
-
-  private async saveApplication(dto: SubmitApplicationDto, extras: Partial<ScholarshipApplication>) {
-    const application = this.applicationRepo.create({
-      ...dto,
-      ...extras,
-    });
-    return this.applicationRepo.save(application);
-  }
-
-  private async evaluateRuleset(rulesetName: string, input: any): Promise<any> {
-    try {
-      const engine = new ZenEngine();
-      const rulesPath = path.join(process.cwd(), 'rules', rulesetName);
-      const ruleContent = await fs.readFile(rulesPath, 'utf-8');
-      const decision = engine.createDecision(JSON.parse(ruleContent) as object);
-      console.log(`Evaluating ruleset: ${rulesetName} with input:`, JSON.stringify(input));
-      const { result } = await decision.evaluate(input);
-      console.log(`Ruleset: ${rulesetName} result:`, JSON.stringify(result));
-      return result;
-    } catch (e) {
-      console.error(`Failed to evaluate ruleset ${rulesetName}:`, e);
-      return null;
-    }
-  }
-
-  private async evaluateDocValidation(dto: SubmitApplicationDto) {
-    const res = await this.evaluateRuleset('document_validation', {
-      hasID: dto.hasID ?? false,
-      IDValid: dto.hasID ?? false,
-      hasIncomeDoc: dto.hasIncomeDoc ?? false,
-      hasStudentCert: dto.hasStudentCert ?? false,
-      hasFamilyStatus: dto.hasFamilyStatus ?? false,
-    });
-    const reason = res?.reason ? String(res.reason).replace(/^"|"$/g, '').trim() : null;
-    return {
-      valid: reason === '-' || reason === null || reason === '',
-      reason: reason === '-' ? null : reason,
-    };
-  }
-
-  private async evaluatePriority(dto: SubmitApplicationDto): Promise<number> {
-    const res = await this.evaluateRuleset('priority_rules', {
-      income: dto.income ?? 0,
-      orphan: dto.isOrphan ?? false,
-      GPA: dto.gpa ?? 0,
-      applicationDate: new Date().toISOString().split('T')[0],
-    });
-    const fromRule = parseInt(String(res?.priorityScore ?? res?.priority ?? '').trim() || '0', 10);
-    if (fromRule > 0) return Math.min(100, fromRule);
-    return Math.min(
-      100,
-      Math.round((dto.gpa ?? 0) * 20) + (dto.isOrphan ? 10 : 0) + (dto.achievements ? 5 : 0),
+  async submitRequest(
+    dto: SubmitScholarshipDto,
+    citizenId: string,
+  ): Promise<ScholarshipApplicationEntity> {
+    // Validate name through GoRules
+    const validation = this.goRulesService.validateName(
+      dto.firstName,
+      dto.lastName,
     );
-  }
 
-  private async evaluateLevels(dto: SubmitApplicationDto): Promise<string> {
-    const res = await this.evaluateRuleset('scholarship', {
-      GPA: dto.gpa ?? 0,
-      Income: dto.income ?? 0,
-      Achievements: dto.achievements ?? false,
+    if (validation.status === 'REJECT') {
+      throw new UnprocessableEntityException(validation.reason);
+    }
+
+    // Create scholarship request
+    const request = this.scholarshipRepository.create({
+      firstName: dto.firstName,
+      lastName: dto.lastName,
+      nationalId: dto.nationalId,
+      university: dto.university,
+      gpa: dto.gpa,
+      status: 'PENDING',
+      citizenId,
     });
-    const level = (res?.ScholarshipLevel ?? res?.scholarshipLevel ?? '').replace(/^"|"$/g, '').trim();
-    if (level && level !== 'NONE') return level;
-    const g = dto.gpa ?? 0;
-    const inc = dto.income ?? 0;
-    if (g >= 3.8 && inc <= 2000) return 'LEVEL_3';
-    if (g >= 3.5 && inc <= 4000) return 'LEVEL_2';
-    if (g >= 3.0 && inc <= 6000) return 'LEVEL_1';
-    return 'NONE';
+
+    const saved = await this.scholarshipRepository.save(request);
+
+    // Spawn Flowable process
+    try {
+      const process = await this.flowableService.startProcessInstance(
+        'scholarship-process',
+        {
+          requestId: saved.id,
+          firstName: saved.firstName,
+          lastName: saved.lastName,
+          nationalId: saved.nationalId,
+        },
+      );
+      saved.flowableProcessInstanceId = process.id;
+      await this.scholarshipRepository.save(saved);
+    } catch {
+      // Process unavailable but request is still saved
+      saved.flowableProcessInstanceId = 'process-unavailable';
+      await this.scholarshipRepository.save(saved);
+    }
+
+    return saved;
   }
 
-  async findAll(): Promise<ScholarshipApplication[]> {
-    return this.applicationRepo.find({ order: { createdAt: 'DESC' } });
+  async getMyRequests(
+    citizenId: string,
+  ): Promise<ScholarshipApplicationEntity[]> {
+    return this.scholarshipRepository.find({
+      where: { citizenId },
+      order: { createdAt: 'DESC' },
+    });
   }
 
-  async findOne(id: string): Promise<ScholarshipApplication | null> {
-    return this.applicationRepo.findOne({ where: { id } });
+  async getSupervisorTasks(): Promise<FlowableTask[]> {
+    return this.flowableService.getSupervisorTasks();
   }
 
-  async updateStatus(
+  async completeTask(
     id: string,
-    action: StatusAction,
-    reason?: string,
-  ): Promise<ScholarshipApplication> {
-    const application = await this.applicationRepo.findOne({ where: { id } });
-    if (!application) throw new NotFoundException(`Application ${id} not found`);
-    const nextStatus = getNextStatusFromRule(application.status, action);
-    if (nextStatus == null) {
-      throw new BadRequestException(`Invalid status transition: ${action} from ${application.status}`);
+    dto: CompleteScholarshipTaskDto,
+  ): Promise<ScholarshipApplicationEntity> {
+    const request = await this.scholarshipRepository.findOne({
+      where: { id },
+    });
+
+    if (!request) {
+      throw new NotFoundException(`Scholarship request '${id}' not found`);
     }
-    application.status = nextStatus;
-    if (nextStatus === ApplicationStatus.REJECTED && reason?.trim()) {
-      application.reason = reason.trim();
+
+    // Complete the Flowable task
+    try {
+      const approved = dto.action === 'APPROVED';
+      await this.flowableService.completeTask(dto.taskId, approved);
+
+      request.status = dto.action;
+      return this.scholarshipRepository.save(request);
+    } catch (error) {
+      throw new UnprocessableEntityException(
+        'Failed to complete task in workflow',
+      );
     }
-    return this.applicationRepo.save(application);
   }
 
-  /**
-   * Get all Flowable tasks for an application's process instance
-   */
-  async getApplicationTasks(applicationId: string) {
-    const application = await this.applicationRepo.findOne({ where: { id: applicationId } });
-    if (!application) throw new NotFoundException(`Application ${applicationId} not found`);
-    if (!application.processInstanceId) {
-      throw new BadRequestException(`Application ${applicationId} has no active Flowable process`);
+  async findOne(id: string): Promise<ScholarshipApplicationEntity> {
+    const request = await this.scholarshipRepository.findOne({ where: { id } });
+    if (!request) {
+      throw new NotFoundException(`Scholarship request '${id}' not found`);
     }
-    return this.flowableService.getTasksForProcessInstance(application.processInstanceId);
+    return request;
   }
 
-  /**
-   * Complete a Flowable task and update application status accordingly
-   */
-  async completeWorkflowTask(
-    applicationId: string,
-    taskId: string,
-    approvalDecision?: string,
-    reason?: string,
-  ): Promise<ScholarshipApplication> {
-    const application = await this.applicationRepo.findOne({ where: { id: applicationId } });
-    if (!application) throw new NotFoundException(`Application ${applicationId} not found`);
-    if (!application.processInstanceId) {
-      throw new BadRequestException(`Application ${applicationId} has no active Flowable process`);
-    }
-
-    // Prepare variables for the task
-    const taskVariables: any = {};
-    if (approvalDecision) {
-      taskVariables.approvalDecision = approvalDecision;
-    }
-    if (reason) {
-      taskVariables.rejectionReason = reason;
-    }
-
-    // Complete the task in Flowable
-    await this.flowableService.completeTask(taskId, taskVariables);
-
-    // Update application status based on the decision
-    if (approvalDecision === 'APPROVE') {
-      application.status = ApplicationStatus.APPROVED;
-    } else if (approvalDecision === 'REJECT') {
-      application.status = ApplicationStatus.REJECTED;
-      if (reason) {
-        application.reason = reason;
-      }
-    }
-
-    return this.applicationRepo.save(application);
-  }
-
-  /**
-   * Get the status of the Flowable process instance for an application
-   */
-  async getProcessStatus(applicationId: string) {
-    const application = await this.applicationRepo.findOne({ where: { id: applicationId } });
-    if (!application) throw new NotFoundException(`Application ${applicationId} not found`);
-    if (!application.processInstanceId) {
-      throw new BadRequestException(`Application ${applicationId} has no active Flowable process`);
-    }
-    return this.flowableService.getProcessInstance(application.processInstanceId);
+  async findAll(): Promise<ScholarshipApplicationEntity[]> {
+    return this.scholarshipRepository.find({ order: { createdAt: 'DESC' } });
   }
 }
