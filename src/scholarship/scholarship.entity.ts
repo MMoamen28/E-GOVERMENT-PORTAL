@@ -36,6 +36,24 @@ export class ScholarshipApplicationEntity {
   @Column({ type: 'varchar', nullable: true })
   flowableTaskId: string | null;
 
+  @Column({ type: 'int', nullable: true })
+  discount: number;
+
+  @Column({ type: 'decimal', precision: 12, scale: 2, nullable: true })
+  income: number;
+
+  @Column({ type: 'boolean', default: false })
+  achievements: boolean;
+
+  @Column({ type: 'varchar', nullable: true })
+  scholarshipLevel: string;
+
+  @Column({ type: 'int', nullable: true })
+  priorityScore: number;
+
+  @Column({ type: 'boolean', nullable: true })
+  documentsValid: boolean;
+
   @Column({ type: 'varchar', nullable: true })
   flowableProcessInstanceId: string | null;
 
