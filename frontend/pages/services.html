@@ -25,9 +25,9 @@
           <a href="../index.html" class="nav-link">Home</a>
           <a href="services.html" class="nav-link active">Services</a>
           <a href="contact.html" class="nav-link">Contact</a>
-          <a href="scholarship.html" class="nav-link">Scholarship</a>
+          <a href="../scholarship.html" class="nav-link">Scholarship</a>
           <a
-            href="../../frontend-id-namecheck/pages/login.html"
+            href="./login.html"
             class="btn btn-primary"
             style="margin-left: 1rem"
             >Login / Register</a
@@ -62,7 +62,7 @@
               href="#"
               class="btn btn-primary btn-block service-link"
               data-service="id-renewal"
-              data-target="../../frontend-id-namecheck/pages/id-renewal.html"
+              data-target="./id-renewal.html"
               >Apply Now <i class="fas fa-arrow-right"></i
             ></a>
           </div>
@@ -94,7 +94,7 @@
               href="#"
               class="btn btn-outline btn-block service-link"
               data-service="scholarship"
-              data-target="scholarship.html"
+              data-target="../scholarship.html"
               >Apply Now <i class="fas fa-arrow-right"></i
             ></a>
           </div>
@@ -157,7 +157,9 @@
               return;
             }
 
-            const payload = JSON.parse(atob(parts[1]));
+            const payload = JSON.parse(
+              atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')),
+            );
             const now = Date.now() / 1000;
 
             if (payload.exp && payload.exp < now) {

@@ -16,9 +16,9 @@ import {
 import { IdRenewalService } from './id-renewal.service';
 import { CreateRenewalDto } from './dto/create-renewal.dto';
 import { CompleteTaskDto } from './dto/complete-task.dto';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { RolesGuard } from '../auth/roles.guard';
-import { Roles } from '../auth/roles.decorator';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
 
 interface RequestWithUser extends Request {
   user: Record<string, unknown>;

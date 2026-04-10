@@ -12,11 +12,11 @@
     <exclusiveGateway id="decisionGateway" name="Approval Decision"></exclusiveGateway>
     
     <sequenceFlow id="approveFlow" sourceRef="decisionGateway" targetRef="approvedEvent" name="Approved">
-      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${action == 'APPROVED'}]]></conditionExpression>
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${approved == true}]]></conditionExpression>
     </sequenceFlow>
     
     <sequenceFlow id="rejectFlow" sourceRef="decisionGateway" targetRef="rejectedEvent" name="Rejected">
-      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${action == 'REJECTED'}]]></conditionExpression>
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${approved == false}]]></conditionExpression>
     </sequenceFlow>
 
     <endEvent id="approvedEvent" name="Application Approved"></endEvent>

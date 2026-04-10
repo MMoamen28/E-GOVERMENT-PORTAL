@@ -16,7 +16,7 @@ export class AuthService {
   ) {
     this.issuer =
       this.configService.get<string>('keycloak.issuer') ||
-      'http://localhost:8080/realms/e-gov-portal';
+      'http://localhost:8080/realms/egov-portal';
     this.clientId =
       this.configService.get<string>('keycloak.clientId') || 'id-renewal-api';
     this.clientSecret =
