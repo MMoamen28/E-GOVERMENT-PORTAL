@@ -166,71 +166,79 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   // ——— Apply form ———
-  document.getElementById('applyForm').addEventListener('submit', async function (e) {
-    e.preventDefault();
-    const applicantId = document.getElementById('apply-applicantId').value;
-    const gpa = parseFloat(document.getElementById('apply-gpa').value);
-    const income = parseFloat(document.getElementById('apply-income').value);
-    const achievements = document.getElementById('apply-achievements').checked;
+  const scholarshipForm = document.getElementById('scholarship-form');
+  if (scholarshipForm) {
+    scholarshipForm.addEventListener('submit', async function (e) {
+      e.preventDefault();
+      
+      const firstName = document.getElementById('firstName').value;
+      const lastName = document.getElementById('lastName').value;
+      const nationalId = document.getElementById('nationalId').value;
+      const university = document.getElementById('university').value;
+      const gpa = parseFloat(document.getElementById('gpa').value);
+      const income = parseFloat(document.getElementById('income').value);
+      const achievements = document.getElementById('achievements').checked;
 
-    const isOrphan = document.getElementById('apply-orphan').checked;
-    const isStudent = document.getElementById('apply-student').checked;
-    const hasID = document.getElementById('apply-hasID').checked;
-    const hasIncomeDoc = document.getElementById('apply-hasIncomeDoc').checked;
-    const hasStudentCert = document.getElementById('apply-hasStudentCert').checked;
-    const hasFamilyStatus = document.getElementById('apply-hasFamilyStatus').checked;
-
-
-    const successEl = document.getElementById('apply-success');
-    const errorEl = document.getElementById('apply-error');
-    const policyEl = document.getElementById('policy-result');
-
-    successEl.style.display = 'none';
-    errorEl.style.display = 'none';
-    policyEl.style.display = 'none';
-
-    const btn = this.querySelector('button[type="submit"]');
-    const origText = btn.innerHTML;
-    btn.disabled = true;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting…';
-    try {
-      const res = await window.EgovAuth.apiFetch('/scholarship/apply', {
-        method: 'POST',
-
-        body: JSON.stringify({ 
-          applicantId, 
-          gpa, 
-          income, 
-          achievements,
-          isOrphan,
-          isStudent,
-          hasID,
-          hasIncomeDoc,
-          hasStudentCert,
-          hasFamilyStatus
-        }),
-
-      });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        var msg = data.message || 'Submit failed';
-        if (res.status === 403 && (msg.indexOf('role') !== -1 || msg.indexOf('applicant') !== -1)) {
-          msg = 'Your account does not have permission to apply. Newly registered users need the Applicant role. Sign out, then use Register to create a new account (new accounts get the role automatically). Or ask an administrator to assign you the Applicant role in Keycloak.';
-        }
-        throw new Error(msg);
+      const messageEl = document.getElementById('message');
+      if (messageEl) {
+        messageEl.style.display = 'none';
+        messageEl.className = '';
       }
-      successEl.textContent = 'Application submitted successfully.';
-      successEl.style.display = 'block';
-      this.reset();
-      document.getElementById('apply-applicantId').value = applicantId;
-      loadApplications();
-    } catch (err) {
-      errorEl.textContent = err.message || 'Could not submit application.';
-      errorEl.style.display = 'block';
-    }
-    btn.disabled = false;
-    btn.innerHTML = origText;
-  });
+
+      const btn = document.getElementById('submit-btn');
+      const btnText = document.getElementById('btn-text');
+      const origText = btnText ? btnText.textContent : 'Submit Application';
+      
+      if (btn) btn.disabled = true;
+      if (btnText) btnText.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting…';
+
+      try {
+        const res = await window.EgovAuth.apiFetch('/scholarship', {
+          method: 'POST',
+          body: JSON.stringify({ 
+            firstName,
+            lastName,
+            nationalId,
+            university,
+            gpa, 
+            income, 
+            achievements
+          }),
+        });
+
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(data.message || 'Submission failed');
+        }
+
+        if (messageEl) {
+          messageEl.textContent = 'Application submitted successfully!';
+          messageEl.style.display = 'block';
+          messageEl.style.backgroundColor = '#d4edda';
+          messageEl.style.color = '#155724';
+          messageEl.style.padding = '1rem';
+          messageEl.style.borderRadius = '4px';
+          messageEl.style.marginBottom = '1.5rem';
+        }
+        
+        scholarshipForm.reset();
+        loadApplications();
+      } catch (err) {
+        if (messageEl) {
+          messageEl.textContent = err.message || 'Could not submit application.';
+          messageEl.style.display = 'block';
+          messageEl.style.backgroundColor = '#f8d7da';
+          messageEl.style.color = '#721c24';
+          messageEl.style.padding = '1rem';
+          messageEl.style.borderRadius = '4px';
+          messageEl.style.marginBottom = '1.5rem';
+        }
+      } finally {
+        if (btn) btn.disabled = false;
+        if (btnText) btnText.textContent = origText;
+      }
+    });
+  }
 
   // ——— Load applications ———
   function statusClass(s) {
@@ -254,7 +262,7 @@ document.addEventListener('DOMContentLoaded', function () {
     tableWrap.style.display = 'none';
     tbody.innerHTML = '';
     try {
-      const res = await window.EgovAuth.apiFetch('/scholarship');
+      const res = await window.EgovAuth.apiFetch('/scholarship/my-requests');
       if (res.status === 401) {
         loadingEl.style.display = 'none';
         emptyEl.innerHTML = 'Session not accepted by the server. You can still apply below, or <a href="#" id="sign-out-retry">sign out and sign in again</a>.';
@@ -285,14 +293,11 @@ document.addEventListener('DOMContentLoaded', function () {
         var tr = document.createElement('tr');
         tr.dataset.id = app.id;
         tr.innerHTML =
-          '<td>' + formatDate(app.createdAt) + '</td>' +
+          '<td>' + (app.id.substring(0, 8) + '...') + '</td>' +
+          '<td>' + (app.university || '—') + '</td>' +
           '<td>' + (app.gpa != null ? app.gpa : '—') + '</td>' +
-          '<td>' + (app.income != null ? app.income : '—') + '</td>' +
-          '<td>' + (app.scholarshipLevel || '—') + '</td>' +
-          '<td>' + (app.priorityScore != null ? app.priorityScore : '—') + '</td>' +
-          '<td><span class="status-badge ' + statusClass(app.status) + '">' + (app.status || 'DRAFT') + '</span></td>' +
-          '<td>' + (app.reason || '—') + '</td>' +
-          (isOfficerNow ? '<td class="scholarship-actions" data-app-id="' + app.id + '" data-status="' + (app.status || '') + '"></td>' : '');
+          '<td><span style="padding: 0.25rem 0.5rem; border-radius: 4px; background: ' + (app.status === 'APPROVED' ? '#d4edda' : app.status === 'REJECTED' ? '#f8d7da' : '#fff3cd') + '">' + (app.status || 'PENDING') + '</span></td>' +
+          '<td>' + formatDate(app.createdAt) + '</td>';
         tbody.appendChild(tr);
         if (isOfficerNow) {
           var actionsCell = tr.querySelector('.scholarship-actions');

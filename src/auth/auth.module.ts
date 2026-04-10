@@ -6,7 +6,6 @@ import { HttpModule } from '@nestjs/axios';
 import authConfig from './auth.config';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { AuthService } from './auth.service';
-import { AuthController } from './auth.controller';
 
 @Module({
   imports: [
@@ -15,7 +14,6 @@ import { AuthController } from './auth.controller';
     HttpModule,
   ],
   providers: [KeycloakStrategy, JwtStrategy, AuthService],
-  controllers: [AuthController],
   exports: [PassportModule, AuthService],
 })
 export class AuthModule {}

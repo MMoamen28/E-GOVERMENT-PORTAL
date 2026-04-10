@@ -64,6 +64,14 @@
         },
         "clientRole": false,
         "containerId": "e-gov-portal"
+      },
+      {
+        "id": "a1b2c3d4-0007-4000-8000-000000000007",
+        "name": "scholarship_level_admin",
+        "description": "Admin for scholarship rules/levels",
+        "composite": false,
+        "clientRole": false,
+        "containerId": "e-gov-portal"
       }
     ],
     "client": {}

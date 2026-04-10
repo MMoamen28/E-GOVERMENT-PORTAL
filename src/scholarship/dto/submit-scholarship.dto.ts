@@ -37,4 +37,12 @@ export class SubmitScholarshipDto {
   @Min(0)
   @Max(4.0)
   gpa: number;
+
+  @ApiProperty({ example: 5000, description: 'Monthly family income' })
+  @IsNumber()
+  @Min(0)
+  income: number;
+
+  @ApiProperty({ example: true, description: 'Has extracurricular achievements' })
+  achievements: boolean;
 }

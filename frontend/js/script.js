@@ -4,6 +4,9 @@
  */
 
 document.addEventListener('DOMContentLoaded', () => {
+  // Sync Nav UI
+  updateNavUI();
+
   // === 1. Sticky Navigation & Mobile Menu ===
   const navbar = document.getElementById('navbar');
   const navToggle = document.getElementById('nav-toggle');
@@ -114,90 +117,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Login Form Validation
-  const loginForm = document.getElementById('loginForm');
-  if (loginForm) {
-    loginForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      let isValid = true;
-
-      const usernameInput =
-        document.getElementById('login-username') ||
-        document.getElementById('nationalId');
-      const passwordInput = document.getElementById('password');
-
-      if (usernameInput.value.trim() === '') {
-        setError(usernameInput, 'Username is required');
-        isValid = false;
-      } else {
-        removeError(usernameInput);
-      }
-
-      if (passwordInput.value.length < 6) {
-        setError(passwordInput, 'Password must be at least 6 characters');
-        isValid = false;
-      } else {
-        removeError(passwordInput);
-      }
-
-      if (isValid) {
-        const btn = loginForm.querySelector('.btn');
-        const originalText = btn.innerHTML;
-        btn.innerHTML =
-          '<i class="fas fa-spinner fa-spin"></i> Authenticating...';
-
-        try {
-          const apiBase =
-            window.EgovAuth &&
-            typeof window.EgovAuth.getApiBaseUrl === 'function'
-              ? window.EgovAuth.getApiBaseUrl()
-              : 'http://localhost:3000';
-          const response = await fetch(apiBase + '/auth/login', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              username: usernameInput.value.trim(),
-              password: passwordInput.value,
-            }),
-          });
-
-          if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || 'Authentication failed');
-          }
-
-          const data = await response.json();
-
-          // Decode token to get roles (simplified role detection as in auth.js)
-          const parts = data.access_token.split('.');
-          const payload = JSON.parse(
-            atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')),
-          );
-
-          const user = {
-            sub: payload?.sub,
-            username: payload?.preferred_username || usernameInput.value.trim(),
-            roles: payload?.realm_access?.roles || [],
-          };
-
-          // Store token and user object using keys consistent with auth.js
-          localStorage.setItem('egov_scholarship_token', data.access_token);
-          localStorage.setItem('egov_scholarship_user', JSON.stringify(user));
-
-          const redirectTarget =
-            new URLSearchParams(window.location.search).get('redirect') ||
-            'services.html';
-          window.location.href = redirectTarget;
-        } catch (error) {
-          console.error('Login error:', error);
-          alert('Login failed: ' + error.message);
-          btn.innerHTML = originalText;
-        }
-      }
-    });
-  }
+  // Login Form Validation is handled locally in login.html to support service-specific redirects.
 
   const registerLink = document.getElementById('registerLink');
   if (
@@ -275,5 +195,57 @@ document.addEventListener('DOMContentLoaded', () => {
   function removeError(input) {
     const inputGroup = input.parentElement;
     inputGroup.classList.remove('error');
+  }
+
+  function updateNavUI() {
+    const token = localStorage.getItem('egov_token');
+    const navMenu = document.getElementById('nav-menu');
+    if (!navMenu) return;
+
+    let loginBtn = navMenu.querySelector('.btn-primary, .btn-outline');
+    // If we can't find it by class, look for "Login" text
+    if (!loginBtn) {
+      const links = navMenu.querySelectorAll('.nav-link, .btn');
+      links.forEach((l) => {
+        if (l.innerText.includes('Login')) loginBtn = l;
+      });
+    }
+
+    if (token && loginBtn) {
+      // User is logged in
+      const userRaw = localStorage.getItem('egov_user');
+      let userName = 'Dashboard';
+      try {
+        const u = JSON.parse(userRaw);
+        if (u && u.username) userName = u.username;
+      } catch (e) {}
+
+      // Change Login button to Dashboard link
+      loginBtn.innerHTML = `<i class="fas fa-user-circle"></i> ${userName}`;
+      loginBtn.className = 'nav-link active';
+      loginBtn.style.color = 'var(--primary-color)';
+      loginBtn.style.fontWeight = '600';
+
+      // Determine correct path to dashboard based on page depth
+      const isSubPage = window.location.pathname.includes('/pages/');
+      loginBtn.href = isSubPage ? '../dashboard.html' : './dashboard.html';
+
+      // Add Logout button if not present
+      if (!document.getElementById('nav-logout')) {
+        const logoutBtn = document.createElement('a');
+        logoutBtn.id = 'nav-logout';
+        logoutBtn.href = '#';
+        logoutBtn.className = 'btn btn-outline';
+        logoutBtn.style.marginLeft = '1rem';
+        logoutBtn.innerText = 'Logout';
+        logoutBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          localStorage.removeItem('egov_token');
+          localStorage.removeItem('egov_user');
+          window.location.href = isSubPage ? '../index.html' : './index.html';
+        });
+        navMenu.appendChild(logoutBtn);
+      }
+    }
   }
 });

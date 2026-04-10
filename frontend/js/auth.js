@@ -3,8 +3,8 @@
  * Token is used for API calls; backend validates JWT and roles.
  */
 (function () {
-  const STORAGE_TOKEN = 'egov_scholarship_token';
-  const STORAGE_USER = 'egov_scholarship_user';
+  const STORAGE_TOKEN = 'egov_token';
+  const STORAGE_USER = 'egov_user';
 
   const KEYCLOAK_REALM = 'egov-portal';
   const KEYCLOAK_CLIENT = 'scholarship-frontend';
