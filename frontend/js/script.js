@@ -30,9 +30,12 @@ document.addEventListener('DOMContentLoaded', () => {
   // Mobile menu toggle
   if (navToggle) {
     navToggle.addEventListener('click', () => {
+      const isExpanded = navToggle.getAttribute('aria-expanded') === 'true';
+      navToggle.setAttribute('aria-expanded', !isExpanded);
       navMenu.classList.toggle('active');
+      
       const icon = navToggle.querySelector('i');
-      if (navMenu.classList.contains('active')) {
+      if (!isExpanded) {
         icon.classList.remove('fa-bars');
         icon.classList.add('fa-times');
       } else {
@@ -145,14 +148,15 @@ document.addEventListener('DOMContentLoaded', () => {
       if (isValid) {
         const btn = contactForm.querySelector('.btn');
         const originalText = btn.innerHTML;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin" aria-hidden="true"></i> Processing...';
+        btn.disabled = true;
 
         setTimeout(() => {
-          alert(
-            'Thank you! Your message has been sent to the appropriate department. We will respond within 48 hours.',
-          );
+          const alertRegion = document.getElementById('contact-alert');
+          if (alertRegion) alertRegion.style.display = 'flex';
           contactForm.reset();
           btn.innerHTML = originalText;
+          btn.disabled = false;
         }, 1500);
       }
     });
@@ -188,6 +192,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function setError(input, message) {
     const inputGroup = input.parentElement;
     inputGroup.classList.add('error');
+    input.setAttribute('aria-invalid', 'true');
     const errorElement = inputGroup.querySelector('.error-message');
     if (errorElement) errorElement.innerText = message;
   }
@@ -195,6 +200,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function removeError(input) {
     const inputGroup = input.parentElement;
     inputGroup.classList.remove('error');
+    input.setAttribute('aria-invalid', 'false');
   }
 
   function updateNavUI() {
@@ -221,10 +227,9 @@ document.addEventListener('DOMContentLoaded', () => {
       } catch (e) {}
 
       // Change Login button to Dashboard link
-      loginBtn.innerHTML = `<i class="fas fa-user-circle"></i> ${userName}`;
-      loginBtn.className = 'nav-link active';
-      loginBtn.style.color = 'var(--primary-color)';
-      loginBtn.style.fontWeight = '600';
+      loginBtn.innerHTML = `<i class="fas fa-user-circle" aria-hidden="true"></i> Dashboard (${userName})`;
+      loginBtn.className = 'btn btn-primary';
+      loginBtn.id = 'nav-dashboard-btn';
 
       // Determine correct path to dashboard based on page depth
       const isSubPage = window.location.pathname.includes('/pages/');
@@ -236,8 +241,8 @@ document.addEventListener('DOMContentLoaded', () => {
         logoutBtn.id = 'nav-logout';
         logoutBtn.href = '#';
         logoutBtn.className = 'btn btn-outline';
-        logoutBtn.style.marginLeft = '1rem';
-        logoutBtn.innerText = 'Logout';
+        logoutBtn.style.marginLeft = '0.5rem';
+        logoutBtn.innerHTML = '<i class="fas fa-sign-out-alt" aria-hidden="true"></i> Logout';
         logoutBtn.addEventListener('click', (e) => {
           e.preventDefault();
           localStorage.removeItem('egov_token');

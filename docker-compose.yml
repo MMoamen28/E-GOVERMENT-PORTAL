@@ -36,10 +36,35 @@ services:
       - egov-network
 
   egov-flowable:
-    image: flowable/flowable-rest:6.8.0
+    image: flowable/all-in-one:latest
     container_name: egov-flowable
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:h2:mem:flowable;DB_CLOSE_DELAY=-1
+      SPRING_DATASOURCE_DRIVER_CLASS_NAME: org.h2.Driver
+      SPRING_DATASOURCE_USERNAME: sa
+      SPRING_DATASOURCE_PASSWORD: ""
+      FLOWABLE_COMMON_APP_IDM_ADMIN_USER: admin
+      FLOWABLE_COMMON_APP_IDM_ADMIN_PASSWORD: test
     ports:
       - "8082:8080"
+    networks:
+      - egov-network
+
+  egov-gorules:
+    image: gorules/brms:latest
+    container_name: egov-gorules
+    environment:
+      DB_HOST: egov-postgres
+      DB_NAME: egov_gorules
+      DB_USER: egov_user
+      DB_PASSWORD: egov_pass
+      DB_SSL_DISABLED: "true"
+      DB_REJECT_UNAUTHORIZED: "false"
+    ports:
+      - "8090:80"
+    depends_on:
+      egov-postgres:
+        condition: service_healthy
     networks:
       - egov-network
 
@@ -67,6 +92,7 @@ services:
       FLOWABLE_URL: http://egov-flowable:8080
       FLOWABLE_USER: rest-admin
       FLOWABLE_PASS: test
+      GORULES_URL: http://egov-gorules:80
       PORT: 3000
     ports:
       - "3000:3000"
