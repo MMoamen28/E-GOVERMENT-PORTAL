@@ -1,0 +1,124 @@
+services:
+  egov-postgres:
+    image: postgres:15-alpine
+    container_name: egov-postgres
+    environment:
+      POSTGRES_USER: egov_user
+      POSTGRES_PASSWORD: egov_pass
+      POSTGRES_DB: egov_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - egov-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U egov_user -d egov_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  egov-keycloak:
+    image: keycloak/keycloak:23.0.0
+    container_name: egov-keycloak
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json
+    command: start-dev --import-realm
+    depends_on:
+      egov-postgres:
+        condition: service_healthy
+    networks:
+      - egov-network
+
+  egov-flowable:
+    image: flowable/all-in-one:latest
+    container_name: egov-flowable
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:h2:mem:flowable;DB_CLOSE_DELAY=-1
+      SPRING_DATASOURCE_DRIVER_CLASS_NAME: org.h2.Driver
+      SPRING_DATASOURCE_USERNAME: sa
+      SPRING_DATASOURCE_PASSWORD: ""
+      FLOWABLE_COMMON_APP_IDM_ADMIN_USER: admin
+      FLOWABLE_COMMON_APP_IDM_ADMIN_PASSWORD: test
+    ports:
+      - "8082:8080"
+    networks:
+      - egov-network
+
+  egov-gorules:
+    image: gorules/brms:latest
+    container_name: egov-gorules
+    environment:
+      DB_HOST: egov-postgres
+      DB_NAME: egov_gorules
+      DB_USER: egov_user
+      DB_PASSWORD: egov_pass
+      DB_SSL_DISABLED: "true"
+      DB_REJECT_UNAUTHORIZED: "false"
+    ports:
+      - "8090:80"
+    depends_on:
+      egov-postgres:
+        condition: service_healthy
+    networks:
+      - egov-network
+
+  egov-nestjs:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: egov-nestjs
+    env_file:
+      - .env
+    environment:
+      DB_HOST: egov-postgres
+      DB_PORT: 5432
+      DB_USER: egov_user
+      DB_PASS: egov_pass
+      DB_NAME: egov_db
+      KEYCLOAK_URL: http://egov-keycloak:8080
+      KEYCLOAK_REALM: egov-portal
+      KEYCLOAK_CLIENT_ID: id-renewal-api
+      KEYCLOAK_CLIENT_SECRET: xPnisDToolKxJGD9GRsBx1Tn3G0zcbKD
+      KEYCLOAK_ISSUER: http://egov-keycloak:8080/realms/egov-portal
+      KEYCLOAK_INTERNAL_URL: http://egov-keycloak:8080/realms/egov-portal
+      KEYCLOAK_AUDIENCE: account
+      KEYCLOAK_JWKS_URI: http://egov-keycloak:8080/realms/egov-portal/protocol/openid-connect/certs
+      FLOWABLE_URL: http://egov-flowable:8080
+      FLOWABLE_USER: rest-admin
+      FLOWABLE_PASS: test
+      GORULES_URL: http://egov-gorules:80
+      PORT: 3000
+    ports:
+      - "3000:3000"
+    depends_on:
+      egov-postgres:
+        condition: service_healthy
+    volumes:
+      - ./uploads:/app/uploads
+    networks:
+      - egov-network
+
+  egov-frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: egov-frontend
+    ports:
+      - "8888:80"
+    depends_on:
+      - egov-nestjs
+    networks:
+      - egov-network
+
+volumes:
+  postgres_data:
+
+networks:
+  egov-network:
+    driver: bridge

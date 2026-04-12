@@ -1,24 +1,28 @@
-import { IsString, IsEnum, IsNumber, Min, IsNotEmpty, MaxLength } from 'class-validator';
-import { BusinessCategory } from '../enums/business-category.enum';
+import { ApiProperty } from '@nestjs/swagger';
+import { IsString, IsNotEmpty, IsIn } from 'class-validator';
 
 export class CreateBusinessLicenseDto {
+  @ApiProperty({ example: 'Ahmed Hassan' })
   @IsString()
   @IsNotEmpty()
-  @MaxLength(255)
+  ownerName: string;
+
+  @ApiProperty({ example: 'Hassan Electronics' })
+  @IsString()
+  @IsNotEmpty()
   businessName: string;
 
-  @IsEnum(BusinessCategory, {
-    message: 'Business type must be a valid category (e.g., FOOD, RETAIL, TECH)',
+  @ApiProperty({ example: '12345678901234' })
+  @IsString()
+  @IsNotEmpty()
+  nationalId: string;
+
+  @ApiProperty({
+    example: 'Retail',
+    enum: ['Retail', 'Service', 'Manufacturing', 'Tech'],
   })
+  @IsString()
   @IsNotEmpty()
-  businessType: BusinessCategory;
-
-  @IsNumber({ maxDecimalPlaces: 2 })
-  @Min(0, { message: 'Capital cannot be negative' })
-  @IsNotEmpty()
-  declaredCapital: number;
-
-  // Notice we DO NOT include 'status' or 'ownerId' here. 
-  // Status defaults to Pending.
-  // OwnerId will be securely extracted from the Keycloak JWT token, not trusted from the user's payload!
+  @IsIn(['Retail', 'Service', 'Manufacturing', 'Tech'])
+  businessType: string;
 }

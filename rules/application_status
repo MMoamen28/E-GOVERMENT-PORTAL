@@ -1,0 +1,67 @@
+{
+  "edges": [
+    {
+      "id": "edge-appstatus-1",
+      "type": "edge",
+      "sourceId": "input-appstatus-1",
+      "targetId": "expression-appstatus-1",
+      "sourceHandle": ""
+    }
+  ],
+  "nodes": [
+    {
+      "id": "input-appstatus-1",
+      "name": "input",
+      "type": "inputNode",
+      "content": {
+        "schema": "{\"type\":\"object\",\"properties\":{\"currentStatus\":{\"type\":\"string\",\"enum\":[\"DRAFT\",\"SUBMITTED\",\"UNDER_REVIEW\",\"APPROVED\",\"REJECTED\"]},\"action\":{\"type\":\"string\",\"enum\":[\"start_review\",\"approve\",\"reject\"]}},\"required\":[\"currentStatus\",\"action\"]}"
+      },
+      "position": { "x": -10, "y": 125 }
+    },
+    {
+      "id": "expression-appstatus-1",
+      "name": "Application Status Transitions",
+      "type": "decisionTableNode",
+      "content": {
+        "rules": [
+          {
+            "_id": "r1",
+            "col-current": "\"SUBMITTED\"",
+            "col-action": "\"start_review\"",
+            "col-nextStatus": "\"UNDER_REVIEW\"",
+            "col-allowed": "true"
+          },
+          {
+            "_id": "r2",
+            "col-current": "\"UNDER_REVIEW\"",
+            "col-action": "\"approve\"",
+            "col-nextStatus": "\"APPROVED\"",
+            "col-allowed": "true"
+          },
+          {
+            "_id": "r3",
+            "col-current": "\"UNDER_REVIEW\"",
+            "col-action": "\"reject\"",
+            "col-nextStatus": "\"REJECTED\"",
+            "col-allowed": "true"
+          }
+        ],
+        "inputs": [
+          { "id": "col-current", "name": "currentStatus", "field": "currentStatus" },
+          { "id": "col-action", "name": "action", "field": "action" }
+        ],
+        "outputs": [
+          { "id": "col-nextStatus", "name": "nextStatus", "field": "nextStatus" },
+          { "id": "col-allowed", "name": "allowed", "field": "allowed" }
+        ],
+        "hitPolicy": "first",
+        "inputField": null,
+        "outputPath": null,
+        "passThrough": true,
+        "executionMode": "single"
+      },
+      "position": { "x": 430, "y": 114 }
+    }
+  ],
+  "contentType": "graph"
+}

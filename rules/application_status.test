@@ -1,0 +1,42 @@
+{
+  "filePath": "application_status",
+  "testCases": [
+    {
+      "id": "tc1",
+      "name": "SUBMITTED + start_review -> UNDER_REVIEW",
+      "input": {
+        "currentStatus": "SUBMITTED",
+        "action": "start_review"
+      },
+      "expectedOutput": {
+        "nextStatus": "UNDER_REVIEW",
+        "allowed": true
+      }
+    },
+    {
+      "id": "tc2",
+      "name": "UNDER_REVIEW + approve -> APPROVED",
+      "input": {
+        "currentStatus": "UNDER_REVIEW",
+        "action": "approve"
+      },
+      "expectedOutput": {
+        "nextStatus": "APPROVED",
+        "allowed": true
+      }
+    },
+    {
+      "id": "tc3",
+      "name": "UNDER_REVIEW + reject -> REJECTED",
+      "input": {
+        "currentStatus": "UNDER_REVIEW",
+        "action": "reject"
+      },
+      "expectedOutput": {
+        "nextStatus": "REJECTED",
+        "allowed": true
+      }
+    }
+  ],
+  "contentType": "test"
+}
