@@ -1,98 +1,116 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# E-Government Digital Portal
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+A consolidated microservices architecture designed to modernize and formalize citizen electronic services. The portal provides a secure, accessible, and automated gateway for handling critical government processes such as **Scholarship Applications**, **Business Licensing**, and **National ID Renewals** through complex BPMN approval workflows and dual-rules validation.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+---
 
-## Description
+## 🚀 Project Overview
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+The E-Government Portal serves as a unified digital infrastructure for citizen-to-government interaction. It leverages a robust microservices backend to orchestrate long-running processes, validate submissions against real-time regulatory rules, and ensure high-standard Identity and Access Management (IAM).
 
-## Project setup
+Key features include:
+- **Consolidated Service Catalog**: Unified UI for all available citizen services.
+- **Automated Workflows**: Full BPMN integration for multi-stage application approvals.
+- **Dynamic Rules Engine**: Validation of citizen eligibility using externalized business rules.
+- **WCAG 2.1 AA Compliance**: A highly accessible frontend designed for a diverse citizen base.
 
-```bash
-$ npm install
-```
+---
 
-## Compile and run the project
+## 🛠️ Tech Stack
 
-```bash
-# development
-$ npm run start
+| Component | Technology | Role |
+| :--- | :--- | :--- |
+| **Backend API** | [NestJS](https://nestjs.com/) | Modular TypeScript microservices framework. |
+| **Frontend** | Vanilla HTML / JS / CSS | Formal, accessible, high-performance UI. |
+| **Workflow Engine** | [Flowable](https://www.flowable.com/) | BPMN 2.0 orchestration and task management. |
+| **Rules Engine** | [GoRules (ZenEngine)](https://gorules.io/) | JSON-driven business rules/logic validation. |
+| **Identity (IAM)** | [Keycloak](https://www.keycloak.org/) | OIDC/SAML single sign-on and role management. |
+| **Database** | [PostgreSQL](https://www.postgresql.org/) | Reliable relational data storage. |
+| **Orchestration** | [Docker Compose](https://www.docker.com/) | Containerized local and deployment environment. |
 
-# watch mode
-$ npm run start:dev
+---
 
-# production mode
-$ npm run start:prod
-```
+## 📋 Prerequisites & System Requirements
 
-## Run tests
+To ensure smooth operation of the local cluster, your system must meet the following requirements:
 
-```bash
-# unit tests
-$ npm run test
+- **Environment**: Docker and Docker Compose (v2.x+ recommended).
+- **Resources (WSL2 / Linux / Mac)**:
+  - **Minimum RAM**: 6GB - 8GB (Highly recommended to accommodate Keycloak and Flowable).
+  - **Minimum CPUs**: 4 Cores.
+  
+> [!TIP]
+> **Windows Users**: If using WSL2, update your `.wslconfig` file in `%USERPROFILE%` with the following limits to prevent OOM (Out of Memory) issues during container startup:
+> ```ini
+> [wsl2]
+> memory=8GB
+> processors=4
+> ```
 
-# e2e tests
-$ npm run test:e2e
+---
 
-# test coverage
-$ npm run test:cov
-```
+## 🏁 Getting Started (Local Development)
 
-## Deployment
+Follow these steps to spin up the entire unified portal environment on your local machine:
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+1. **Switch to Development Branch**
+   ```bash
+   git checkout Development
+   ```
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+2. **Clean Container State** (Optional but recommended)
+   ```bash
+   docker compose down -v
+   ```
 
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
-```
+3. **Build and Deploy the Stack**
+   ```bash
+   docker compose up -d --build
+   ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+> [!NOTE]
+> **Startup Time**: While the NestJS API initializes quickly, the **Flowable** container requires internal Java initialization and may take up to **60 seconds longer** to reach a ready state.
 
-## Resources
+---
 
-Check out a few resources that may come in handy when working with NestJS:
+## 🗺️ Local Service Mapping & Endpoints
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+| Service | Localhost URL | Description |
+| :--- | :--- | :--- |
+| **Frontend Portal** | [http://localhost:8888](http://localhost:8888) | Citizen-facing formal interface. |
+| **NestJS API Root** | [http://localhost:3000](http://localhost:3000) | Core backend JSON API. |
+| **Swagger API Docs** | [http://localhost:3000/docs](http://localhost:3000/docs) | Interactive API documentation. |
+| **Keycloak Admin** | [http://localhost:8080/admin](http://localhost:8080/admin) | Identity and realm management. |
+| **Flowable BPM UI** | [http://localhost:8082/flowable-ui/](http://localhost:8082/flowable-ui/) | Workflow modeling and task dashboard. |
+| **Flowable REST** | [http://localhost:8082/flowable-rest](http://localhost:8082/flowable-rest) | Flowable integration endpoint. |
+| **GoRules Engine** | [http://localhost:8090](http://localhost:8090) | Business rules visual editor (Studio). |
+| **PostgreSQL DB** | `localhost:5433` | Persistence layer for core services. |
 
-## Support
+---
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+## 🔑 Test Accounts & Credentials
 
-## Stay in touch
+### System Administrative Access
+| System | Username | Password | Notes |
+| :--- | :--- | :--- | :--- |
+| **Keycloak Admin** | `admin` | `admin` | Realm: `egov-portal` |
+| **Flowable UI** | `admin` | `test` | For modeling & monitoring. |
+| **Flowable REST** | `rest-admin` | `test` | Internal service account. |
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+### End-User Testing
+| Account Role | Username | Password |
+| :--- | :--- | :--- |
+| **Verified Citizen** | `portal_tester2` | `Portal123!` |
 
-## License
+---
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+## 👤 Role-Based Testing (Supervisors)
+To test the full lifecycle of an application (e.g., approving a Scholarship or Business License):
+1. Log into the **Keycloak Admin Console**.
+2. Select the `egov-portal` realm.
+3. Create a new user or identify an existing one.
+4. Assign the **`supervisor`** role to this account.
+5. Use this supervisor account to log into the **Flowable Task UI** to review, approve, or reject pending citizen requests.
+
+---
+© 2026 E-Government Digital Portal Project. All rights reserved.

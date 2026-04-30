@@ -1,0 +1,10 @@
+{
+  "description": "Maps each service to its ruleset file in rules/. Used by NestJS or tooling to resolve which rules to call per service.",
+  "mapping": {
+    "docvalidation": "rules/document_validation",
+    "prioritycheck": "rules/priority_rules",
+    "levels": "rules/scholarship",
+    "policies": "rules/eligibility_policy",
+    "appstatus": "rules/application_status"
+  }
+}

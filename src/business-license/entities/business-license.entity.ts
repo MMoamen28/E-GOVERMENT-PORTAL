@@ -1,36 +1,44 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
-import { BusinessLicenseStatus } from '../enums/business-license-status.enum';
-import { BusinessCategory } from '../enums/business-category.enum';
+/* eslint-disable */
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 
-@Entity('business_licenses') // This is the actual table name in PostgreSQL
-export class BusinessLicense {
+@Entity('business_licenses')
+export class BusinessLicenseEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  // We need to know which citizen owns this (we will get this from Keycloak later)
-  @Column({ name: 'owner_id', type: 'varchar' })
-  ownerId: string; 
+  @Column({ type: 'varchar' })
+  ownerName: string;
 
-  @Column({ type: 'varchar', length: 255 })
+  @Column({ type: 'varchar' })
   businessName: string;
 
-  @Column({ type: 'enum', enum: BusinessCategory })
-  businessType: BusinessCategory;
+  @Column({ type: 'varchar' })
+  nationalId: string;
 
-  @Column({ type: 'decimal', precision: 12, scale: 2 })
-  declaredCapital: number;
+  @Column({ type: 'varchar' })
+  businessType: string; // RETAIL, SERVICE, MANUFACTURING, TECH
 
-  @Column({ 
-    type: 'enum', 
-    enum: BusinessLicenseStatus, 
-    default: BusinessLicenseStatus.PENDING_SUBMISSION 
-  })
-  status: BusinessLicenseStatus;
+  @Column({ type: 'varchar', default: 'PENDING' })
+  status: string; // PENDING, APPROVED, REJECTED
 
-  // Enterprise apps always track when records are created and modified
-  @CreateDateColumn({ name: 'created_at' })
+  @Column({ type: 'varchar' })
+  citizenId: string;
+
+  @Column({ type: 'varchar', nullable: true })
+  flowableTaskId: string | null;
+
+  @Column({ type: 'varchar', nullable: true })
+  flowableProcessInstanceId: string | null;
+
+  @CreateDateColumn()
   createdAt: Date;
 
-  @UpdateDateColumn({ name: 'updated_at' })
+  @UpdateDateColumn()
   updatedAt: Date;
 }

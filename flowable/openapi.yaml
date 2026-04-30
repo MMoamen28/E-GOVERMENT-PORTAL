@@ -1,0 +1,507 @@
+openapi: 3.0.0
+info:
+  title: E-Government Portal - Complete API
+  description: Combined API documentation for the E-Government Portal (NestJS App + Flowable Workflow Engine)
+  version: 1.0.0
+  contact:
+    name: E-Government Team
+
+servers:
+  - url: http://localhost:8090/flowable-rest/service
+    description: Flowable REST API (Process Management)
+  - url: http://localhost:3000
+    description: NestJS Application API (Main Services)
+
+paths:
+  # ==================== FLOWABLE REPOSITORY ENDPOINTS ====================
+  /repository/process-definitions:
+    get:
+      summary: List all process definitions
+      operationId: getProcessDefinitions
+      tags:
+        - Flowable - Repository
+      parameters:
+        - name: name
+          in: query
+          description: Filter by name
+          schema:
+            type: string
+        - name: key
+          in: query
+          description: Filter by key
+          schema:
+            type: string
+      security:
+        - basicAuth: []
+      responses:
+        '200':
+          description: List of process definitions
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ProcessDefinition'
+                  total:
+                    type: integer
+                  start:
+                    type: integer
+                  size:
+                    type: integer
+
+  # ==================== FLOWABLE RUNTIME ENDPOINTS ====================
+  /runtime/process-instances:
+    get:
+      summary: List all process instances
+      operationId: getProcessInstances
+      tags:
+        - Flowable - Runtime
+      parameters:
+        - name: processDefinitionKey
+          in: query
+          schema:
+            type: string
+        - name: suspended
+          in: query
+          schema:
+            type: boolean
+      security:
+        - basicAuth: []
+      responses:
+        '200':
+          description: List of process instances
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ProcessInstance'
+                  total:
+                    type: integer
+
+  /runtime/tasks:
+    get:
+      summary: List all tasks
+      operationId: getTasks
+      tags:
+        - Flowable - Runtime
+      parameters:
+        - name: processInstanceId
+          in: query
+          schema:
+            type: string
+        - name: assignee
+          in: query
+          schema:
+            type: string
+      security:
+        - basicAuth: []
+      responses:
+        '200':
+          description: List of tasks
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/TaskInfo'
+                  total:
+                    type: integer
+
+  /runtime/process-instances/{processInstanceId}:
+    get:
+      summary: Get process instance details
+      operationId: getProcessInstance
+      tags:
+        - Flowable - Runtime
+      parameters:
+        - name: processInstanceId
+          in: path
+          required: true
+          schema:
+            type: string
+      security:
+        - basicAuth: []
+      responses:
+        '200':
+          description: Process instance details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProcessInstance'
+        '404':
+          description: Process instance not found
+
+  /runtime/tasks/{taskId}:
+    get:
+      summary: Get task details
+      operationId: getTask
+      tags:
+        - Flowable - Runtime
+      parameters:
+        - name: taskId
+          in: path
+          required: true
+          schema:
+            type: string
+      security:
+        - basicAuth: []
+      responses:
+        '200':
+          description: Task details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskInfo'
+        '404':
+          description: Task not found
+
+  /runtime/tasks/{taskId}/variables:
+    get:
+      summary: Get task variables
+      operationId: getTaskVariables
+      tags:
+        - Flowable - Runtime
+      parameters:
+        - name: taskId
+          in: path
+          required: true
+          schema:
+            type: string
+      security:
+        - basicAuth: []
+      responses:
+        '200':
+          description: Task variables
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: object
+
+  # ==================== NESTJS APP ENDPOINTS ====================
+  /scholarship:
+    get:
+      summary: List all scholarship applications
+      operationId: listScholarships
+      tags:
+        - NestJS - Scholarship
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of scholarship applications
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ScholarshipApplication'
+        '401':
+          description: Unauthorized
+
+    post:
+      summary: Submit a new scholarship application
+      operationId: submitScholarship
+      tags:
+        - NestJS - Scholarship
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubmitApplicationDTO'
+      security:
+        - bearerAuth: []
+      responses:
+        '201':
+          description: Application submitted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScholarshipApplication'
+        '400':
+          description: Invalid input
+        '401':
+          description: Unauthorized
+
+  /scholarship/{id}:
+    get:
+      summary: Get scholarship application details
+      operationId: getScholarship
+      tags:
+        - NestJS - Scholarship
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Application details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScholarshipApplication'
+        '404':
+          description: Application not found
+
+  /scholarship/{id}/workflow/tasks:
+    get:
+      summary: Get workflow tasks for application
+      operationId: getApplicationTasks
+      tags:
+        - NestJS - Scholarship Workflow
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of workflow tasks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TaskInfo'
+
+  /scholarship/{id}/workflow/status:
+    get:
+      summary: Get workflow status for application
+      operationId: getWorkflowStatus
+      tags:
+        - NestJS - Scholarship Workflow
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Workflow status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProcessInstance'
+
+  /scholarship/{id}/workflow/complete-task:
+    post:
+      summary: Complete a workflow task
+      operationId: completeWorkflowTask
+      tags:
+        - NestJS - Scholarship Workflow
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                taskId:
+                  type: string
+                variables:
+                  type: object
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Task completed successfully
+        '400':
+          description: Invalid request
+
+  /auth/login:
+    post:
+      summary: User login
+      operationId: login
+      tags:
+        - NestJS - Auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+                  token_type:
+                    type: string
+        '401':
+          description: Invalid credentials
+
+components:
+  schemas:
+    ProcessDefinition:
+      type: object
+      properties:
+        id:
+          type: string
+        key:
+          type: string
+        name:
+          type: string
+        version:
+          type: integer
+        description:
+          type: string
+        deploymentId:
+          type: string
+        category:
+          type: string
+        suspended:
+          type: boolean
+
+    ProcessInstance:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        processDefinitionId:
+          type: string
+        processDefinitionKey:
+          type: string
+        processDefinitionName:
+          type: string
+        processDefinitionVersion:
+          type: integer
+        suspended:
+          type: boolean
+        ended:
+          type: boolean
+        startTime:
+          type: string
+          format: date-time
+        variables:
+          type: object
+
+    TaskInfo:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        processInstanceId:
+          type: string
+        taskDefinitionKey:
+          type: string
+        assignee:
+          type: string
+        owner:
+          type: string
+        createTime:
+          type: string
+          format: date-time
+        dueDate:
+          type: string
+          format: date-time
+        priority:
+          type: integer
+        variables:
+          type: object
+
+    ScholarshipApplication:
+      type: object
+      properties:
+        id:
+          type: integer
+        applicantId:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        status:
+          type: string
+          enum: [SUBMITTED, UNDER_REVIEW, APPROVED, REJECTED, COMPLETED]
+        appliedDate:
+          type: string
+          format: date-time
+        processInstanceId:
+          type: string
+        scholarshipLevel:
+          type: string
+        priorityScore:
+          type: number
+
+    SubmitApplicationDTO:
+      type: object
+      required:
+        - email
+        - phone
+      properties:
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+        scholarshipLevel:
+          type: string
+
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
+      description: HTTP Basic Authentication (admin / test)
+
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT Bearer Token from Keycloak
+
+tags:
+  - name: Flowable - Repository
+    description: Process definitions and workflow definitions
+  - name: Flowable - Runtime
+    description: Running process instances and tasks
+  - name: NestJS - Auth
+    description: Authentication and user management
+  - name: NestJS - Scholarship
+    description: Scholarship application management
+  - name: NestJS - Scholarship Workflow
+    description: Scholarship workflow and task management
+

@@ -1,0 +1,17 @@
+### Get Admin Token
+POST http://localhost:8080/realms/egov-portal/protocol/openid-connect/token
+Content-Type: application/x-www-form-urlencoded
+
+client_id=id-renewal-api&client_secret=sH5op5ZTOuvYIItcw3hqchqLGTt7sYgo&username=admin&password=admin&grant_type=password
+
+### Get Citizen Token
+POST http://localhost:8080/realms/egov-portal/protocol/openid-connect/token
+Content-Type: application/x-www-form-urlencoded
+
+client_id=id-renewal-api&client_secret=sH5op5ZTOuvYIItcw3hqchqLGTt7sYgo&username=citizen&password=admin&grant_type=password
+
+### Get Supervisor Token
+POST http://localhost:8080/realms/egov-portal/protocol/openid-connect/token
+Content-Type: application/x-www-form-urlencoded
+
+client_id=id-renewal-api&client_secret=sH5op5ZTOuvYIItcw3hqchqLGTt7sYgo&username=supervisor&password=admin&grant_type=password

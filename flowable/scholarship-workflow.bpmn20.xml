@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:flowable="http://flowable.org/bpmn" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:omgdc="http://www.omg.org/spec/DD/20100524/DC" xmlns:omgdi="http://www.omg.org/spec/DD/20100524/DI" typeLanguage="http://www.w3.org/2001/XMLSchema" expressionLanguage="http://www.w3.org/1999/XPath" targetNamespace="http://www.flowable.org/processdef">
+  <process id="scholarshipProcess" name="Scholarship Application Process" isExecutable="true">
+    <!-- Start Event: Application Submitted -->
+    <startEvent id="startEvent" name="Start"></startEvent>
+    <sequenceFlow id="flow1" sourceRef="startEvent" targetRef="validateDocuments"></sequenceFlow>
+
+    <!-- Document Validation Task -->
+    <userTask id="validateDocuments" name="Validate Documents" flowable:candidateGroups="officers">
+      <documentation>Validate application documents based on documentsValid flag</documentation>
+    </userTask>
+    <sequenceFlow id="flow2" sourceRef="validateDocuments" targetRef="docValidationGateway"></sequenceFlow>
+
+    <!-- Gateway: Check Document Validity -->
+    <exclusiveGateway id="docValidationGateway" name="Documents Valid?"></exclusiveGateway>
+    <sequenceFlow id="flow3_valid" sourceRef="docValidationGateway" targetRef="reviewOfficer" name="Valid">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${documentsValid == true}]]></conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="flow3_invalid" sourceRef="docValidationGateway" targetRef="notifyDocumentIssue" name="Invalid Documents">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${documentsValid != true}]]></conditionExpression>
+    </sequenceFlow>
+
+    <!-- Notify Document Issue Service Task -->
+    <serviceTask id="notifyDocumentIssue" name="Notify Document Issues" flowable:class="org.flowable.spring.service.NotifyService">
+      <documentation>Send notification about document validation failures</documentation>
+    </serviceTask>
+    <sequenceFlow id="flow4" sourceRef="notifyDocumentIssue" targetRef="rejectApplication"></sequenceFlow>
+
+    <!-- Officer Review Task -->
+    <userTask id="reviewOfficer" name="Review Scholarship Application" flowable:candidateGroups="officers">
+      <documentation>Review the scholarship application for applicant: ${applicantId}. Priority Score: ${priorityScore}, Scholarship Level: ${scholarshipLevel}</documentation>
+    </userTask>
+    <sequenceFlow id="flow5" sourceRef="reviewOfficer" targetRef="reviewDecision"></sequenceFlow>
+
+    <!-- Gateway: Officer Decision -->
+    <exclusiveGateway id="reviewDecision" name="Officer Decision"></exclusiveGateway>
+    <sequenceFlow id="flow6_approve" sourceRef="reviewDecision" targetRef="approveApplication" name="Approve">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${approvalDecision == 'APPROVE'}]]></conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="flow6_reject" sourceRef="reviewDecision" targetRef="rejectApplication" name="Reject">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${approvalDecision == 'REJECT'}]]></conditionExpression>
+    </sequenceFlow>
+
+    <!-- Approve Application Service Task -->
+    <serviceTask id="approveApplication" name="Approve Application" flowable:class="org.flowable.spring.service.ApproveService">
+      <documentation>Update application status to APPROVED and notify applicant</documentation>
+    </serviceTask>
+    <sequenceFlow id="flow7" sourceRef="approveApplication" targetRef="notifyApproval"></sequenceFlow>
+
+    <!-- Reject Application Service Task -->
+    <serviceTask id="rejectApplication" name="Reject Application" flowable:class="org.flowable.spring.service.RejectService">
+      <documentation>Update application status to REJECTED with feedback</documentation>
+    </serviceTask>
+    <sequenceFlow id="flow8" sourceRef="rejectApplication" targetRef="notifyRejection"></sequenceFlow>
+
+    <!-- Notification Service Tasks -->
+    <serviceTask id="notifyApproval" name="Send Approval Notification" flowable:class="org.flowable.spring.service.NotifyService">
+      <documentation>Send email/notification to applicant about approval</documentation>
+    </serviceTask>
+    <sequenceFlow id="flow9" sourceRef="notifyApproval" targetRef="endEvent"></sequenceFlow>
+
+    <serviceTask id="notifyRejection" name="Send Rejection Notification" flowable:class="org.flowable.spring.service.NotifyService">
+      <documentation>Send email/notification to applicant about rejection</documentation>
+    </serviceTask>
+    <sequenceFlow id="flow10" sourceRef="notifyRejection" targetRef="endEvent"></sequenceFlow>
+
+    <!-- End Event -->
+    <endEvent id="endEvent" name="End"></endEvent>
+  </process>
+  
+  <!-- Diagram Information -->
+  <bpmndi:BPMNDiagram id="BPMNDiagram_scholarshipProcess">
+    <bpmndi:BPMNPlane bpmnElement="scholarshipProcess" id="BPMNPlane_scholarshipProcess">
+      <bpmndi:BPMNShape bpmnElement="startEvent" id="BPMNShape_startEvent">
+        <omgdc:Bounds height="30.0" width="30.0" x="100.0" y="100.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="validateDocuments" id="BPMNShape_validateDocuments">
+        <omgdc:Bounds height="80.0" width="100.0" x="150.0" y="75.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="docValidationGateway" id="BPMNShape_docValidationGateway">
+        <omgdc:Bounds height="40.0" width="40.0" x="285.0" y="95.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="notifyDocumentIssue" id="BPMNShape_notifyDocumentIssue">
+        <omgdc:Bounds height="80.0" width="100.0" x="350.0" y="175.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="reviewOfficer" id="BPMNShape_reviewOfficer">
+        <omgdc:Bounds height="80.0" width="100.0" x="350.0" y="75.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="reviewDecision" id="BPMNShape_reviewDecision">
+        <omgdc:Bounds height="40.0" width="40.0" x="485.0" y="95.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="approveApplication" id="BPMNShape_approveApplication">
+        <omgdc:Bounds height="80.0" width="100.0" x="550.0" y="30.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="rejectApplication" id="BPMNShape_rejectApplication">
+        <omgdc:Bounds height="80.0" width="100.0" x="550.0" y="140.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="notifyApproval" id="BPMNShape_notifyApproval">
+        <omgdc:Bounds height="80.0" width="100.0" x="675.0" y="30.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="notifyRejection" id="BPMNShape_notifyRejection">
+        <omgdc:Bounds height="80.0" width="100.0" x="675.0" y="140.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="endEvent" id="BPMNShape_endEvent">
+        <omgdc:Bounds height="30.0" width="30.0" x="810.0" y="100.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</definitions>
