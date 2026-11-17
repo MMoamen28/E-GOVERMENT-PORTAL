@@ -35,6 +35,7 @@ export class ScholarshipService {
   async submitApplication(
     dto: SubmitApplicationDto,
   ): Promise<ScholarshipApplication> {
+    // Single eligibility check using rules/eligibility_policy (isStudent, applicationsThisYear, applicationDate)
     const policyResult = await this.policiesService.evaluatePolicy({
       applicantId: dto.applicantId,
       isStudent: dto.isStudent,
@@ -44,20 +45,19 @@ export class ScholarshipService {
       throw new BadRequestException(`Policy rejection: ${policyResult.reason}`);
     }
 
-    const [priorityScore, scholarshipLevel, docStatus, eligibility] =
-      await Promise.all([
-        this.evaluatePriority(dto),
-        this.evaluateLevels(dto),
-        this.evaluateDocValidation(dto),
-        this.evaluateEligibility(dto),
-      ]);
+    const [priorityScore, scholarshipLevel, docStatus] = await Promise.all([
+      this.evaluatePriority(dto),
+      this.evaluateLevels(dto),
+      this.evaluateDocValidation(dto),
+    ]);
 
     const reasonParts: string[] = [];
     if (docStatus.reason && docStatus.reason !== '-' && !docStatus.valid) {
       reasonParts.push(this.normalizeReason(docStatus.reason));
     }
-    if (!eligibility.eligible && eligibility.reason) {
-      reasonParts.push(this.normalizeReason(eligibility.reason));
+    // Eligibility reason from policy (rules/eligibility_policy) – only store when not "-"
+    if (policyResult.reason && policyResult.reason !== '-') {
+      reasonParts.push(this.normalizeReason(policyResult.reason));
     }
     const reason = reasonParts.length > 0 ? reasonParts.join('. ') : null;
 
@@ -97,19 +97,6 @@ export class ScholarshipService {
       console.error(`Failed to evaluate ruleset ${rulesetName}:`, e);
       return null;
     }
-  }
-
-  private async evaluateEligibility(dto: SubmitApplicationDto) {
-    const res = await this.evaluateRuleset('eligibility_policy', {
-      isStudent: dto.isStudent ?? true,
-      applicationsThisYear: 0,
-      applicationDate: new Date().toISOString().split('T')[0],
-    });
-    const reason = res?.reason ? String(res.reason).replace(/^"|"$/g, '').trim() : null;
-    return {
-      eligible: res?.eligible === true || res?.eligible === 'true',
-      reason,
-    };
   }
 
   private async evaluateDocValidation(dto: SubmitApplicationDto) {
